@@ -40,7 +40,7 @@ As a result:
 ## Please note
 
 * When building applications using Azure OpenAI, developers must adhere to the [code of conduct and responsible AI principles.](https://learn.microsoft.com/legal/cognitive-services/openai/code-of-conduct?context=%2Fazure%2Fcognitive-services%2Fopenai%2Fcontext%2Fcontext)
-* This is not an official Microsoft code sample, and is maintained in my spare time
+* This is not an official Microsoft code sample, and is intended as a conversation starter, not as a production-ready application.
 
 ## Feedback
 
