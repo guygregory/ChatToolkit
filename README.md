@@ -10,7 +10,7 @@ As a Partner Technololgy Strategist (PTS) at Microsoft, I wanted to create a sim
 
 Here were six things that I didn't have to do, thanks to the Azure OpenAI service:
 
-1. I didn't have to write the underlying code for the API call, because it was generated from the Azure [OpenAI Studio](https://oai.azure.com/portal/playground)
+1. I didn't have to write the underlying code for the API call, because it was generated from the [Azure OpenAI Studio](https://oai.azure.com/portal/playground)
 2. I didn't have to write the Tkinter UI, because GPT-3 wrote it for me
 3. I didn't have to figure out how to resize the text boxes, because GPT-3 showed me how to do it, and provided the updated code
 4. GPT-3 helped me to apply word wrapping within the text boxes
