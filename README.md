@@ -16,7 +16,7 @@ This is a sample application which demonstrates Azure OpenAI
 * The script requires that you have Python installed, which can be downloaded [here](https://www.python.org/downloads/)
 * Required modules: Tkinter, Open AI (example: pip install openai)
 * Download/clone the script onto your local computer
-* Update the openai.api_key and openai.api_base variables, using the details from your own Azure OpenAI resource
+* Update the openai.api_key and openai.api_base variables, using the details from your own Azure OpenAI resource. You will also need to edit the model name, unless you named it 'text-davinci-003'
 * When running the .py script, a Tkinter form should appear as per the screenshot:
 
 ## Please note
