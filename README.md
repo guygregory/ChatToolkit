@@ -8,7 +8,7 @@ As a Partner Technololgy Strategist (PTS) at Microsoft, I wanted to create a sim
 
 ![](media/Playground.png)
 
-Here were six things that I didn't have to do, thanks to the Azure OpenAI service:
+Here were six efficiencies I gained, thanks to the Azure OpenAI service:
 
 1. I didn't have to write the underlying code for the API call, because it was generated from the [Azure OpenAI Studio](https://oai.azure.com/portal/playground)
 2. I didn't have to write the Tkinter UI, because GPT-3 wrote it for me
