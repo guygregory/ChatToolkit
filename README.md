@@ -24,7 +24,7 @@ As a result:
 
 ## How to use - Prerequisites
 
-* Before deploying Azure OpenAI, please gain approval for your Azure Subscription. [Here's the form](https://aka.ms/oai/access) (currently managed customers/managed partners/MSFT internal only)
+* Before deploying Azure OpenAI, please gain approval for your Azure subscription. [Here's the form](https://aka.ms/oai/access) (currently managed customers/managed partners/MSFT internal only)
 * Once you've had approval, you'll need to deploy the Azure OpenAI service into your subscription. [Instructions are on the Microsoft Docs page.](https://learn.microsoft.com/en-us/azure/cognitive-services/openai/how-to/create-resource?pivots=web-portal)
 * Next, you'll need to [deploy at least one model](https://learn.microsoft.com/en-us/azure/cognitive-services/openai/how-to/create-resource?pivots=web-portal#deploy-a-model), text-davinci-003 is recommended
 
