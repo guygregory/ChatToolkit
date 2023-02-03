@@ -8,7 +8,7 @@ As a Partner Technololgy Strategist (PTS) at Microsoft, I wanted to create a sim
 
 ![](media/Playground.png)
 
-Here were six efficiencies I gained, thanks to the Azure OpenAI service:
+Here were seven efficiencies I gained, thanks to the Azure OpenAI service:
 
 1. I didn't have to write the underlying code for the API call, because it was generated from the [Azure OpenAI Studio](https://oai.azure.com/portal/playground)
 2. I didn't have to write the Tkinter UI, because GPT-3 wrote it for me
@@ -16,6 +16,7 @@ Here were six efficiencies I gained, thanks to the Azure OpenAI service:
 4. GPT-3 helped me to apply word wrapping within the text boxes
 5. GPT-3 advised me how to change the font style
 6. I didn't have to work out how to extract the 'text' value from the returned JSON, because GPT-3 wrote the code to extract the value for me
+7. GPT-3 wrote all the comments (apart from the comments from the sample code)
 
 As a result:
 
