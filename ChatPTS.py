@@ -4,7 +4,7 @@ import requests
 import json
 import openai
 
-openai.api_key = "XXXXXXXXXXXXXXXXXXXXXXXX" # your API key, this can be found from the Azure resource. Either Key 1 or Key 2 can be used
+openai.api_key = "XXXXXXXXXXXXXXXXXXXXXXXX" # your API key, this can be found from the Azure OpenAI resource, under 'Resource Management > Keys and Endpoint. Either Key 1 or Key 2 can be used
 openai.api_base =  "https://XXXXXXXXXX.openai.azure.com" # your endpoint should look like the following https://YOUR_RESOURCE_NAME.openai.azure.com/
 
 openai.api_type = 'azure'
