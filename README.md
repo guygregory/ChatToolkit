@@ -1,6 +1,7 @@
 # Azure Open AI sample application - "ChatPTS"
 
 This is a sample application which demonstrates Azure OpenAI
+![](media/ChatPTS.png)
 
 ## How to use - Prerequisites
 
@@ -8,6 +9,7 @@ This is a sample application which demonstrates Azure OpenAI
 * Once you've had approval, you'll need to deploy the Azure OpenAI service into your subscription. [Instructions are on the Microsoft Docs page.](https://learn.microsoft.com/en-us/azure/cognitive-services/openai/how-to/create-resource?pivots=web-portal)
 * Next, you'll need to [deploy at least one model](https://learn.microsoft.com/en-us/azure/cognitive-services/openai/how-to/create-resource?pivots=web-portal#deploy-a-model), text-davinci-003 is recommended
 
+![](media/Models.png)
 
 ## How to use - Downloading and running the application
 * The script requires that you have Python installed, which can be downloaded [here](https://www.python.org/downloads/)
