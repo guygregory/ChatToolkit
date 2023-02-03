@@ -1,4 +1,4 @@
-# Azure Open AI sample Python application - "ChatPTS"
+# Azure OpenAI sample Python application - "ChatPTS"
 
 ![](media/ChatPTS.png)
 
