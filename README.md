@@ -31,11 +31,11 @@ As a result:
 ![](media/Models.png)
 
 ## How to use - Downloading and running the application
-* The script requires that you have Python installed, which can be downloaded [here](https://www.python.org/downloads/)
-* Required modules: Tkinter, Open AI (example: pip install openai)
+* The script requires that you have Python installed, which can be downloaded [here (python.org)](https://www.python.org/downloads/) or [here (Microsoft Store)](https://www.microsoft.com/store/productId/9NRWMJP3717K)
+* Required modules: [Tkinter](https://docs.python.org/3/library/tkinter.html), [OpenAI](https://pypi.org/project/openai/) (example: pip install openai)
 * Download/clone the script onto your local computer
 * Update the openai.api_key and openai.api_base variables, using the details from your own Azure OpenAI resource. You will also need to edit the model name, unless you named it 'text-davinci-003'
-* When running the .py script, a Tkinter form should appear as per the screenshot:
+* When running the .py script, a Tkinter form should appear as per the above screenshot
 
 ## Please note
 
