@@ -6,6 +6,8 @@ The [Azure OpenAI Service](https://azure.microsoft.com/en-in/blog/general-availa
 
 As a Partner Technololgy Strategist (PTS) at Microsoft, I wanted to create a simple app to demonstrate the simplicity of the new Azure OpenAI service to our partners and customers. I'm not an experienced developer, so I utilized the GPT-3 model and the [GPT-3 Playground in Azure OpenAI Studio](https://oai.azure.com/portal/playground) to create the code for this application.
 
+![](media/Playground.png)
+
 Here were six things that I didn't have to do, thanks to the GPT-3 model:
 
 1. I didn't have to write the underlying code for the API call, because it was generated from the Azure [OpenAI Studio](https://oai.azure.com/portal/playground)
