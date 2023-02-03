@@ -1,7 +1,8 @@
 # Azure Open AI sample application - "ChatPTS"
 
-This is a sample application which demonstrates Azure OpenAI
 ![](media/ChatPTS.png)
+
+This is a sample application which demonstrates Azure OpenAI
 
 ## How to use - Prerequisites
 
