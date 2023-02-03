@@ -6,9 +6,7 @@ This is a sample application which demonstrates Azure OpenAI
 
 * Before deploying Azure OpenAI, please gain approval for your Azure Subscription. [Here's the form](https://customervoice.microsoft.com/Pages/ResponsePage.aspx?id=v4j5cvGGr0GRqy180BHbR7en2Ais5pxKtso_Pz4b1_xUOFA5Qk1UWDRBMjg0WFhPMkIzTzhKQ1dWNyQlQCN0PWcu) (managed customers/managed partners/MSFT internal only)
 * Once you've had approval, you'll need to deploy the Azure OpenAI service into your subscription. [Instructions are on the Microsoft Docs page.](https://learn.microsoft.com/en-us/azure/cognitive-services/openai/how-to/create-resource?pivots=web-portal)
-* Next, you'll need to deploy at least one model, text-davinci-003 is recommended
-
-![](media/pci-training.png)
+* Next, you'll need to [deploy at least one model](https://learn.microsoft.com/en-us/azure/cognitive-services/openai/how-to/create-resource?pivots=web-portal#deploy-a-model), text-davinci-003 is recommended
 
 
 ## How to use - Downloading and running the application
@@ -16,7 +14,7 @@ This is a sample application which demonstrates Azure OpenAI
 * Required modules: Tkinter, Open AI (example: pip install openai)
 * Download/clone the script onto your local computer
 * Update the openai.api_key and openai.api_base variables, using the details from your own Azure OpenAI resource
-* When running the .py script, a Tkinter form should appear as per the screenshot
+* When running the .py script, a Tkinter form should appear as per the screenshot:
 
 ## Please note
 
