@@ -1,59 +1,116 @@
 import tkinter as tk
-import os
-import requests
-import json
 import openai
+import os
+import threading
+import datetime
 
-openai.api_key = "xxxxxxxxxxxxxxxxxxxxxxxxxx" # API key for accessing OpenAI API
-openai.api_base =  "https://xxxxxxxx.openai.azure.com" # your endpoint should look like the following https://YOUR_RESOURCE_NAME.openai.azure.com/
-openai.api_type = 'azure' # API type (for Azure API, it is "azure")
-openai.api_version = '2022-12-01' # This may change in the future
+openai.api_type = "azure"
+openai.api_version = "2023-03-15-preview"
+openai.api_key = os.getenv('OPENAI_API_KEY') # to store your key as an environment variable on Windows, use setx OPENAI_API_KEY "<yourkey>" (and then reboot)
+openai.api_base = os.getenv('OPENAI_API_BASE') # as before, use use setx OPENAI_API_BASE "https://<name>.openai.azure.com/" (and then reboot)
 
-deployment_id='text-davinci-003' # This will correspond to the custom name you chose for your deployment when you deployed a model. 
+system_message = "Your name is ChatPTS, you are a large language model. You are using the GPT-4 preview via the Azure OpenAI Service. Answer as concisely as possible. Knowledge cutoff: September 2021. Current date: "+str(datetime.date.today())
 
-# Function to get the response from the OpenAI API
-def ask_chatpts():
+chathistory = [{"role":"system","content":system_message}]
 
+# Function to get the response from the OpenAI API after the 'Send' button is clicked
+def send():
     # Get the user's prompt from the input box
     input_text = input_box.get("1.0", "end")
 
-    response = openai.Completion.create(
-    engine="text-davinci-003",
-    prompt=input_text,
-    temperature=0.8,
-    max_tokens=1000,
-    top_p=1,
-    frequency_penalty=0,
-    presence_penalty=0,
-    best_of=1,
-    stop=None)
-    
+    output_box.configure(state="normal")
+    output_box.insert("end", "User:\t"+input_text+"\n")
+    output_box.configure(state="disabled")
+    output_box.see("end")
+
+    # Insert the user's prompt into the chat history
+    inputdict = {"role":"assistant","content":input_text}
+    chathistory.append(inputdict)
+
+    # Clear the input box
+    input_box.delete("1.0", "end")
+
+    # Create a new thread for the API call
+    api_thread = threading.Thread(target=call_api, args=(input_text,))
+    api_thread.start()
+
+# Function to call the OpenAI API in a separate thread to prevent locking-up the application while waiting for the API response
+def call_api(input_text):
+    response = openai.ChatCompletion.create(
+        engine="gpt-4",
+        messages=chathistory,
+        temperature=0.5,
+        max_tokens=800,
+        top_p=0.95,
+        frequency_penalty=0,
+        presence_penalty=0,
+        stop=None)
+
+    # Get the response from the API and insert it into the chat history
+    response_dict = response.to_dict()
+    content = response_dict['choices'][0]['message']['content']
+    contentdict = {"role":"assistant","content":content}
+    chathistory.append(contentdict)
+
     # Display the response in the output box
+    display_response(content)
+
+# Function to display the response in the output box
+def display_response(content):
+
+    output_box.configure(state="normal")
+    # Insert the response into the output box
+    output_box.insert("end", "ChatPTS:\t" + content + "\n\n")
+    output_box.configure(state="disabled")
+    output_box.see("end")
+
+# Function to clear the chat boxes, and reset the chat history
+def clear_chat():
+    input_box.delete("1.0", "end")
+    output_box.configure(state="normal")
     output_box.delete("1.0", "end")
-    output_box.insert("1.0", response["choices"][0]["text"])
+    output_box.configure(state="disabled")
+    global chathistory
+    chathistory = [{"role":"system","content":system_message}]
+
+# Function to handle the "Return" key event
+def handle_return(event):
+    send()
+    return "break"  # Prevents the default behavior of the "Return" key adding a stray carriage return after the input box has been cleared
 
 # Create the GUI root window
 root = tk.Tk()
 root.title("ChatPTS")
 
-# Create the input box
-input_box = tk.Text(root, height=5, width=60, wrap="word", font="Calibri 11")
-input_box.pack()
+# Create the output box with scrollbar
+output_frame = tk.Frame(root)
+output_frame.pack(side="top", fill="both", expand=True)
+output_box = tk.Text(output_frame, wrap="word", font="Calibri 11")
+output_box.pack(side="left", fill="both", expand=True)
+output_scrollbar = tk.Scrollbar(output_frame, command=output_box.yview)
+output_scrollbar.pack(side="right", fill="y")
+output_box.config(yscrollcommand=output_scrollbar.set)
+output_box.configure(state="disabled")
 
-# Create the "Ask ChatPTS" button
-ask_button = tk.Button(root, text="Ask ChatPTS", command=ask_chatpts)
-ask_button.pack()
+# Create the input box with scrollbar
+input_frame = tk.Frame(root)
+input_frame.pack(side="top", fill="both", expand=True)
+input_box = tk.Text(input_frame, height=5, wrap="word", font="Calibri 11")
+input_box.pack(side="left", fill="both", expand=True)
+input_scrollbar = tk.Scrollbar(input_frame, command=input_box.yview)
+input_scrollbar.pack(side="right", fill="y")
+input_box.config(yscrollcommand=input_scrollbar.set)
 
-# Create the scrollbar
-scrollbar = tk.Scrollbar(root)
-scrollbar.pack(side="right", fill="y")
+# Bind the "Return" key to the "Send" button
+input_box.bind("<Return>", handle_return)
 
-# Create the output box
-output_box = tk.Text(root, height=35, width=60, wrap="word", font="Calibri 11", yscrollcommand=scrollbar.set)
-output_box.pack()
+# Create the "Ask ChatPTS" button aligned to the right of the form with 16px buffer space
+ask_button = tk.Button(root, text="Send", command=send, height=2, width=10)
+ask_button.pack(side="right", padx=16, pady=5)
 
-# Set the scrollbar command to the output box
-scrollbar.config(command=output_box.yview)
+# Create the "Clear chat" button aligned to the left of the form with 16px buffer space
+clear_button = tk.Button(root, text="Clear chat", command=clear_chat, height=2, width=10)
+clear_button.pack(side="left", padx=6, pady=5)
 
 # Start the GUI event loop
 root.mainloop()
