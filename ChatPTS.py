@@ -8,8 +8,9 @@ openai.api_type = "azure"
 openai.api_version = "2023-03-15-preview"
 openai.api_key = os.getenv('OPENAI_API_KEY') # to store your key as an environment variable on Windows, use setx OPENAI_API_KEY "<yourkey>" (and then reboot)
 openai.api_base = os.getenv('OPENAI_API_BASE') # as before, use use setx OPENAI_API_BASE "https://<name>.openai.azure.com/" (and then reboot)
+model_deployment_name = "gpt-4" # model names within the Azure OpenAI Service (e.g. "gpt-4", "gpt-4-32k", "gpt-35-turbo")
 
-system_message = "Your name is ChatPTS, you are a large language model. You are using the GPT-4 preview via the Azure OpenAI Service. Answer as concisely as possible. Knowledge cutoff: September 2021. Current date: "+str(datetime.date.today())
+system_message = "Your name is ChatPTS, you are a large language model. You are using the " + model_deployment_name + " AI model via the Azure OpenAI Service. Answer as concisely as possible. Knowledge cutoff: September 2021. Current date: "+str(datetime.date.today())
 
 chathistory = [{"role":"system","content":system_message}]
 
@@ -21,7 +22,7 @@ def send():
     output_box.configure(state="normal")
     output_box.insert("end", "User:\t"+input_text+"\n")
     output_box.configure(state="disabled")
-    output_box.see("end")
+    output_box.see("end") # Scroll to the bottom of the output box
 
     # Insert the user's prompt into the chat history
     inputdict = {"role":"assistant","content":input_text}
@@ -37,7 +38,7 @@ def send():
 # Function to call the OpenAI API in a separate thread to prevent locking-up the application while waiting for the API response
 def call_api(input_text):
     response = openai.ChatCompletion.create(
-        engine="gpt-4",
+        engine=model_deployment_name,
         messages=chathistory,
         temperature=0.5,
         max_tokens=800,
@@ -62,7 +63,7 @@ def display_response(content):
     # Insert the response into the output box
     output_box.insert("end", "ChatPTS:\t" + content + "\n\n")
     output_box.configure(state="disabled")
-    output_box.see("end")
+    output_box.see("end") # Scroll to the bottom of the output box
 
 # Function to clear the chat boxes, and reset the chat history
 def clear_chat():
