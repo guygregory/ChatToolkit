@@ -8,7 +8,7 @@ openai.api_type = "azure"
 openai.api_version = "2023-03-15-preview"
 openai.api_key = os.getenv('OPENAI_API_KEY') # to store your key as an environment variable on Windows, use setx OPENAI_API_KEY "<yourkey>" (and then reboot)
 openai.api_base = os.getenv('OPENAI_API_BASE') # as before, use use setx OPENAI_API_BASE "https://<name>.openai.azure.com/" (and then reboot)
-model_deployment_name = "gpt-4" # model names within the Azure OpenAI Service (e.g. "gpt-4", "gpt-4-32k", "gpt-35-turbo")
+model_deployment_name = "gpt-4" # customize this for your own model deployment within the Azure OpenAI Service (e.g. "gpt-4", "gpt-4-32k", "gpt-35-turbo")
 
 system_message = "Your name is ChatPTS, you are a large language model. You are using the " + model_deployment_name + " AI model via the Azure OpenAI Service. Answer as concisely as possible. Knowledge cutoff: September 2021. Current date: "+str(datetime.date.today())
 
