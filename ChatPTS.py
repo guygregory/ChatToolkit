@@ -1,4 +1,5 @@
 import tkinter as tk
+import tkinter.messagebox as messagebox
 import openai
 import os
 import threading
@@ -37,24 +38,29 @@ def send():
 
 # Function to call the OpenAI API in a separate thread to prevent locking-up the application while waiting for the API response
 def call_api(input_text):
-    response = openai.ChatCompletion.create(
-        engine=model_deployment_name,
-        messages=chathistory,
-        temperature=0.5,
-        max_tokens=800,
-        top_p=0.95,
-        frequency_penalty=0,
-        presence_penalty=0,
-        stop=None)
+    try:
+        response = openai.ChatCompletion.create(
+            engine=model_deployment_name,
+            messages=chathistory,
+            temperature=0.5,
+            max_tokens=800,
+            top_p=0.95,
+            frequency_penalty=0,
+            presence_penalty=0,
+            stop=None)
 
-    # Get the response from the API and insert it into the chat history
-    response_dict = response.to_dict()
-    content = response_dict['choices'][0]['message']['content']
-    contentdict = {"role":"assistant","content":content}
-    chathistory.append(contentdict)
+        # Get the response from the API and insert it into the chat history
+        response_dict = response.to_dict()
+        content = response_dict['choices'][0]['message']['content']
+        contentdict = {"role":"assistant","content":content}
+        chathistory.append(contentdict)
 
-    # Display the response in the output box
-    display_response(content)
+        # Display the response in the output box
+        display_response(content)
+
+        # If the request fails for any reason (e.g. no internet connection, rate limit exceed, etc.), display the error message in a message box and continue
+    except openai.error.OpenAIError as e:
+        messagebox.showerror("Error", f"Azure OpenAI API Error: {e}")
 
 # Function to display the response in the output box
 def display_response(content):
