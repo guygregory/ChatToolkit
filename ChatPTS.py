@@ -7,12 +7,21 @@ import datetime
 
 openai.api_type = "azure"
 openai.api_version = "2023-03-15-preview"
-openai.api_key = os.getenv('OPENAI_API_KEY') # to store your key as an environment variable on Windows, use setx OPENAI_API_KEY "<yourkey>" (and then reboot)
-openai.api_base = os.getenv('OPENAI_API_BASE') # as before, use use setx OPENAI_API_BASE "https://<name>.openai.azure.com/" (and then reboot)
+
+try:
+    openai.api_key = os.environ['OPENAI_API_KEY']
+except KeyError:
+    openai.api_key = ""
+
+try:
+    openai.api_base = os.environ['OPENAI_API_BASE']
+except Exception:
+    openai.api_base = ""
+
 model_deployment_name = "gpt-4" # customize this for your own model deployment within the Azure OpenAI Service (e.g. "gpt-4", "gpt-4-32k", "gpt-35-turbo")
 
 chatbot_name = "ChatPTS"
-system_message = "Your name is " + chatbot_name + ", you are a large language model. You are using the " + model_deployment_name + " AI model via the Azure OpenAI Service. Answer as concisely as possible. Knowledge cutoff: September 2021. Current date: "+str(datetime.date.today())
+system_message = "Your name is " + chatbot_name + ". You are a large language model. You are using the " + model_deployment_name + " AI model via the Azure OpenAI Service. Answer as concisely as possible. Knowledge cutoff: September 2021. Current date: "+str(datetime.date.today())
 
 chathistory = [{"role":"system","content":system_message}]
 
@@ -119,11 +128,69 @@ def open_about_window():
     cancel_button = tk.Button(about_window, text="Close", command=cancel_and_close)
     cancel_button.pack(side="bottom", anchor="center", pady=5)
 
+def open_chatbot_name_window():
+
+    # Create a new window
+    chatbot_name_window = tk.Toplevel(root)
+    chatbot_name_window.title("Edit chat bot name")
+    chatbot_name_window.geometry("250x100")
+    chatbot_name_window.minsize(250, 120)  # Set the minimum width to 250 pixels
+
+    # Set the icon if the file exists, otherwise use the default icon
+    if os.path.exists(icon_path):
+        try:
+            chatbot_name_window.iconbitmap(icon_path)
+        except tk.TclError:
+            pass
+
+    # Create a frame to hold the message box
+    message_box_frame = tk.Frame(chatbot_name_window)
+    message_box_frame.pack(side="top", fill="both", expand=True)
+
+    # configure the grid
+    root.columnconfigure(0, weight=1)
+    root.columnconfigure(1, weight=3)
+
+    # Chat bot name
+    global chatbot_name
+    chatbot_name_label = tk.Label(message_box_frame, text="Chat bot name:", font=font_text)
+    chatbot_name_label.grid(column=0, row=0, sticky=tk.E, padx=5, pady=5)
+
+    chatbot_name_entry = tk.Entry(message_box_frame, font=font_text, width=7)
+    chatbot_name_entry.grid(column=1, row=0, sticky=tk.W, padx=5, pady=5)
+    chatbot_name_entry.insert(0, chatbot_name)
+
+    # Create a button to save and close the window
+    def save_and_close():
+
+        # Save the system message and close the window
+        global chatbot_name
+        global system_message
+        
+        system_message = system_message.replace(chatbot_name, chatbot_name_entry.get(), 1)
+
+        chatbot_name = chatbot_name_entry.get()
+        root.title(chatbot_name)
+
+        chatbot_name_window.destroy()
+        clear_chat()
+
+    save_button = tk.Button(chatbot_name_window, text="Save and close", command=save_and_close)
+    save_button.pack(side="left", padx=6, pady=5)
+
+    # Create a button to cancel and close the window
+    def cancel_and_close():
+        # Close the window without saving
+        chatbot_name_window.destroy()
+
+    cancel_button = tk.Button(chatbot_name_window, text="Cancel", command=cancel_and_close)
+    cancel_button.pack(side="right", padx=16, pady=5)
+
 def open_system_message_window():
 
     # Create a new window
     system_message_window = tk.Toplevel(root)
-    system_message_window.title("Edit System Message")
+    system_message_window.title("Edit system message")
 
     # Set the icon if the file exists, otherwise use the default icon
     if os.path.exists(icon_path):
@@ -165,6 +232,108 @@ def open_system_message_window():
     cancel_button = tk.Button(system_message_window, text="Cancel", command=cancel_and_close)
     cancel_button.pack(side="right", padx=16, pady=5)
 
+def open_api_options_window():
+
+    # Create a new window
+    api_options_window = tk.Toplevel(root)
+    api_options_window.title("Edit API Options")
+    api_options_window.geometry("400x200")
+    api_options_window.minsize(600, 200)  # Set the minimum width to 600 pixels
+
+    # Set the icon if the file exists, otherwise use the default icon
+    if os.path.exists(icon_path):
+        try:
+            api_options_window.iconbitmap(icon_path)
+        except tk.TclError:
+            pass
+
+    # Create a frame to hold the message box
+    message_box_frame = tk.Frame(api_options_window)
+    message_box_frame.pack(side="top", fill="both", expand=True)
+
+    # configure the grid
+    root.columnconfigure(0, weight=1)
+    root.columnconfigure(1, weight=3)
+
+    # API base URL
+    api_base_label = tk.Label(message_box_frame, text="API base URL:", font=font_text)
+    api_base_label.grid(column=0, row=0, sticky=tk.E, padx=5, pady=5)
+
+    api_base_entry = tk.Entry(message_box_frame, font=font_text, width=42)
+    api_base_entry.grid(column=1, row=0, sticky=tk.W, padx=5, pady=5)
+    api_base_entry.insert(0, openai.api_base)
+
+    # API key
+    api_key_label = tk.Label(message_box_frame, text="API key:", font=font_text)
+    api_key_label.grid(column=0, row=1, sticky=tk.E, padx=5, pady=5)
+    
+    api_key_entry = tk.Entry(message_box_frame,  show="*", font=font_text, width=32)
+    api_key_entry.grid(column=1, row=1, sticky=tk.W, padx=5, pady=5)
+    api_key_entry.insert(0, openai.api_key)
+
+    # Create a button to show/hide the API key
+    show_hide_button = tk.Button(message_box_frame, text="Show/hide", command=lambda: toggle_show(api_key_entry))
+    show_hide_button.grid(column=1, row=1, sticky=tk.E, padx=5)
+
+    def toggle_show(entry_widget):
+        if entry_widget.cget("show") == "*":
+            entry_widget.configure(show="")
+        else:
+            entry_widget.configure(show="*")
+
+    # API type
+    api_type_label = tk.Label(message_box_frame, text="API type:", font=font_text)
+    api_type_label.grid(column=0, row=2, sticky=tk.E, padx=5, pady=5)
+
+    api_type_entry = tk.Entry(message_box_frame, font=font_text)
+    api_type_entry.grid(column=1, row=2, sticky=tk.W, padx=5, pady=5)
+    api_type_entry.insert(0, openai.api_type)
+
+    # API version
+    api_version_label = tk.Label(message_box_frame, text="API version:", font=font_text)
+    api_version_label.grid(column=0, row=3, sticky=tk.E, padx=5, pady=5)
+
+    api_version_entry = tk.Entry(message_box_frame, font=font_text)
+    api_version_entry.grid(column=1, row=3, sticky=tk.W, padx=5, pady=5)
+    api_version_entry.insert(0, openai.api_version)
+
+    # Model deployment name
+    model_deployment_name_label = tk.Label(message_box_frame, text="Model deployment name:", font=font_text)
+    model_deployment_name_label.grid(column=0, row=4, sticky=tk.E, padx=5, pady=5)
+
+    model_deployment_name_entry = tk.Entry(message_box_frame, font=font_text)
+    model_deployment_name_entry.grid(column=1, row=4, sticky=tk.W, padx=5, pady=5)
+    model_deployment_name_entry.insert(0, model_deployment_name)
+
+    # Create a button to save and close the window
+    def save_and_close():
+
+        # Save the system message and close the window
+        openai.api_base = api_base_entry.get()
+        openai.api_key = api_key_entry.get()
+        openai.api_type = api_type_entry.get()
+        openai.api_version = api_version_entry.get()
+        
+        global model_deployment_name
+        global system_message
+        
+        system_message = system_message.replace(model_deployment_name, model_deployment_name_entry.get(), 1)
+        model_deployment_name = model_deployment_name_entry.get()
+
+        api_options_window.destroy()
+        clear_chat()
+
+    save_button = tk.Button(api_options_window, text="Save and close", command=save_and_close)
+    save_button.pack(side="left", padx=6, pady=5)
+
+    # Create a button to cancel and close the window
+    def cancel_and_close():
+        # Close the window without saving
+        api_options_window.destroy()
+
+    cancel_button = tk.Button(api_options_window, text="Cancel", command=cancel_and_close)
+    cancel_button.pack(side="right", padx=16, pady=5)
+
 # Create the GUI root window
 root = tk.Tk()
 root.title(chatbot_name)
@@ -185,7 +354,9 @@ file_menu.add_command(label="Exit", command=root.quit)
 
 # Create the 'Options' menu
 options_menu = tk.Menu(menu_bar, tearoff=0)
-options_menu.add_command(label="System Message", command=open_system_message_window)
+options_menu.add_command(label="Chat bot name", command=open_chatbot_name_window)
+options_menu.add_command(label="System message", command=open_system_message_window)
+options_menu.add_command(label="API Options", command=open_api_options_window)
 
 # Create the 'Help' menu
 help_menu = tk.Menu(menu_bar, tearoff=0)
