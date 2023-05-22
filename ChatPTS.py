@@ -29,13 +29,21 @@ icon_path = "icon16.ico"
 
 font_text = "Consolas 11"
 
+# Set variables - https://learn.microsoft.com/en-us/azure/cognitive-services/openai/reference
+
+var_temperature = 0.5 # between 0 and 1
+var_top_p=0.95 # between 0 and 1
+var_max_tokens = 800 # between 1 and 32,768
+var_frequency_penalty = 0 # between -2.0 and 2.0
+var_presence_penalty = 0 # between -2.0 and 2.0
+
 # Function to get the response from the OpenAI API after the 'Send' button is clicked
 def send():
     # Get the user's prompt from the input box
     input_text = input_box.get("1.0", "end")
 
     output_box.configure(state="normal")
-    output_box.insert("end", "User:\t "+input_text+"\n")
+    output_box.insert("end", "User: " + " "*(len(chatbot_name)-4) + input_text+"\n")
     output_box.configure(state="disabled")
     output_box.see("end") # Scroll to the bottom of the output box
 
@@ -56,11 +64,11 @@ def call_api(input_text):
         response = openai.ChatCompletion.create(
             engine=model_deployment_name,
             messages=chathistory,
-            temperature=0.5,
-            max_tokens=800,
-            top_p=0.95,
-            frequency_penalty=0,
-            presence_penalty=0,
+            temperature=var_temperature,
+            max_tokens=var_max_tokens,
+            top_p=var_top_p,
+            frequency_penalty=var_frequency_penalty,
+            presence_penalty=var_presence_penalty,
             stop=None)
 
         # Get the response from the API and insert it into the chat history
@@ -81,7 +89,7 @@ def display_response(content):
 
     output_box.configure(state="normal")
     # Insert the response into the output box
-    output_box.insert("end", chatbot_name +":\t" + content + "\n\n")
+    output_box.insert("end", chatbot_name +": " + content + "\n\n")
     output_box.configure(state="disabled")
     output_box.see("end") # Scroll to the bottom of the output box
 
@@ -134,7 +142,7 @@ def open_chatbot_name_window():
     chatbot_name_window = tk.Toplevel(root)
     chatbot_name_window.title("Edit chat bot name")
     chatbot_name_window.geometry("250x100")
-    chatbot_name_window.minsize(250, 120)  # Set the minimum width to 250 pixels
+    chatbot_name_window.minsize(300, 120)  # Set the minimum width to 250 pixels
 
     # Set the icon if the file exists, otherwise use the default icon
     if os.path.exists(icon_path):
@@ -156,7 +164,7 @@ def open_chatbot_name_window():
     chatbot_name_label = tk.Label(message_box_frame, text="Chat bot name:", font=font_text)
     chatbot_name_label.grid(column=0, row=0, sticky=tk.E, padx=5, pady=5)
 
-    chatbot_name_entry = tk.Entry(message_box_frame, font=font_text, width=7)
+    chatbot_name_entry = tk.Entry(message_box_frame, font=font_text, width=14)
     chatbot_name_entry.grid(column=1, row=0, sticky=tk.W, padx=5, pady=5)
     chatbot_name_entry.insert(0, chatbot_name)
 
@@ -238,7 +246,7 @@ def open_api_options_window():
     api_options_window = tk.Toplevel(root)
     api_options_window.title("Edit API Options")
     api_options_window.geometry("400x200")
-    api_options_window.minsize(600, 200)  # Set the minimum width to 600 pixels
+    api_options_window.minsize(600, 450)  # Set the minimum width to 600 pixels
 
     # Set the icon if the file exists, otherwise use the default icon
     if os.path.exists(icon_path):
@@ -305,6 +313,47 @@ def open_api_options_window():
     model_deployment_name_entry.grid(column=1, row=4, sticky=tk.W, padx=5, pady=5)
     model_deployment_name_entry.insert(0, model_deployment_name)
 
+    # Max tokens
+    max_tokens_label = tk.Label(message_box_frame, text="Max tokens:", font=font_text)
+    max_tokens_label.grid(column=0, row=5, sticky=tk.E, padx=5, pady=5)
+
+    max_tokens_spinbox = tk.Spinbox(message_box_frame, from_=16, to=32768, increment=100, font=font_text, width=5)
+    max_tokens_spinbox.grid(column=1, row=5, sticky=tk.W, padx=5, pady=5)
+    max_tokens_spinbox.delete(0, tk.END)
+    max_tokens_spinbox.insert(0, var_max_tokens)
+
+    # Temperature
+    temperature_label = tk.Label(message_box_frame, text="Temperature:", font=font_text)
+    temperature_label.grid(column=0, row=6, sticky=tk.E, padx=5, pady=5)
+
+    temperature_slider = tk.Scale(message_box_frame, from_=0, to=1, resolution=0.01, orient=tk.HORIZONTAL, length=165, showvalue=1)
+    temperature_slider.grid(column=1, row=6, sticky=tk.W, padx=2)
+    temperature_slider.set(var_temperature)
+
+    # Top p
+    top_p_label = tk.Label(message_box_frame, text="Top p:", font=font_text)
+    top_p_label.grid(column=0, row=7, sticky=tk.E, padx=5, pady=5)
+
+    top_p_slider = tk.Scale(message_box_frame, from_=0, to=1, resolution=0.01, orient=tk.HORIZONTAL, length=165, showvalue=1)
+    top_p_slider.grid(column=1, row=7, sticky=tk.W, padx=2)
+    top_p_slider.set(var_top_p)
+
+    # Frequency penalty
+    frequency_penalty_label = tk.Label(message_box_frame, text="Frequency penalty:", font=font_text)
+    frequency_penalty_label.grid(column=0, row=8, sticky=tk.E, padx=5, pady=5)
+
+    frequency_penalty_slider = tk.Scale(message_box_frame, from_=-2, to=2, resolution=0.01, orient=tk.HORIZONTAL, length=165, showvalue=1)
+    frequency_penalty_slider.grid(column=1, row=8, sticky=tk.W, padx=2)
+    frequency_penalty_slider.set(var_frequency_penalty)
+
+    # Presence penalty
+    presence_penalty_label = tk.Label(message_box_frame, text="Presence penalty:", font=font_text)
+    presence_penalty_label.grid(column=0, row=9, sticky=tk.E, padx=5, pady=5)
+
+    presence_penalty_slider = tk.Scale(message_box_frame, from_=-2, to=2, resolution=0.01, orient=tk.HORIZONTAL, length=165, showvalue=1)
+    presence_penalty_slider.grid(column=1, row=9, sticky=tk.W, padx=2)
+    presence_penalty_slider.set(var_presence_penalty)
+
     # Create a button to save and close the window
     def save_and_close():
 
@@ -316,9 +365,20 @@ def open_api_options_window():
         
         global model_deployment_name
         global system_message
+        global var_temperature
+        global var_top_p
+        global var_max_tokens
+        global var_frequency_penalty
+        global var_presence_penalty
         
         system_message = system_message.replace(model_deployment_name, model_deployment_name_entry.get(), 1)
         model_deployment_name = model_deployment_name_entry.get()
+
+        var_temperature=temperature_slider.get()
+        var_top_p=top_p_slider.get()
+        var_frequency_penalty=frequency_penalty_slider.get()
+        var_presence_penalty=presence_penalty_slider.get()
+        var_max_tokens=int(max_tokens_spinbox.get())
 
         api_options_window.destroy()
         clear_chat()
@@ -326,13 +386,24 @@ def open_api_options_window():
     save_button = tk.Button(api_options_window, text="Save and close", command=save_and_close)
     save_button.pack(side="left", padx=6, pady=5)
 
+    # Create a button to reset the API options to the default values
+    def reset_api_options():
+        temperature_slider.set(0.5)
+        top_p_slider.set(0.95)
+        max_tokens_spinbox.delete(0, tk.END); max_tokens_spinbox.insert(0, 800)
+        frequency_penalty_slider.set(0)
+        presence_penalty_slider.set(0)
+
+    reset_api_options_button = tk.Button(api_options_window, text="Reset to defaults", command=reset_api_options)
+    reset_api_options_button.pack(side="left", padx=97, pady=5)
+
     # Create a button to cancel and close the window
     def cancel_and_close():
         # Close the window without saving
         api_options_window.destroy()
 
     cancel_button = tk.Button(api_options_window, text="Cancel", command=cancel_and_close)
-    cancel_button.pack(side="right", padx=16, pady=5)
+    cancel_button.pack(side="left", padx=82, pady=5)
 
 # Create the GUI root window
 root = tk.Tk()
