@@ -37,4 +37,4 @@ As a Partner Technololgy Strategist (PTS) at Microsoft, I wanted to create a sim
 ## Feedback
 
 *  Reach me on [Twitter @guygregory](https://twitter.com/guygregory) or [LinkedIn](https://linkedin.com/in/guygregory)
-*  Found a bug? Have a suggestion? Please create a [new issue](https://github.com/guygregory/ChatPTS/issues)!
+*  Found a bug? Have a suggestion? Please create a [new issue](https://github.com/guygregory/Chat-Toolkit/issues)!
