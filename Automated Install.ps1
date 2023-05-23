@@ -1,3 +1,6 @@
+# To run this PowerShell script remotely, open Windows Terminal and paste the following line (without the #):
+# Invoke-Expression $(Invoke-WebRequest https://raw.githubusercontent.com/guygregory/ChatToolkit/main/Automated%20Install.ps1)
+
 # Set the local folder path
 $LocalFolder = "C:\Chat Toolkit\"
 
