@@ -20,7 +20,7 @@ Remove-Item -Path $LocalFolder"ChatToolkit-main" -Recurse
 Invoke-Command -ScriptBlock {winget install "Python 3.11" --source msstore}
 
 # Install the OpenAI Python package using pip
-Invoke-Command -ScriptBlock {pip install openai}
+Invoke-Command -ScriptBlock {pip install openai --quiet}
 
 # Change the current directory to the local folder path
 Set-Location -Path $LocalFolder
