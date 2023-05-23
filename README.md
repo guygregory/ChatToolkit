@@ -1,4 +1,4 @@
-# Azure OpenAI sample GPT-4/GPT-3.5 Python application - "ChatPTS"
+# Chat Toolkit - Azure OpenAI sample GPT-4/GPT-3.5 Python application
 
 ![](media/ChatPTSv45.png)
 
