@@ -10,7 +10,10 @@ As a Partner Technololgy Strategist (PTS) at Microsoft, I wanted to create a sim
 *Here's the sample code from [Chat Playground in Azure OpenAI Studio](https://oai.azure.com/portal/playground)*
 
 ![](media/GitHubCopilotChat.png)
-*Here's an example of how I used GitHub Copilot Chat to provide some simple error handling (using the [VS Code extension](https://marketplace.visualstudio.com/items?itemName=GitHub.copilot-chat))*
+*Here's an example of how I used GitHub Copilot Chat to provide some simple error handling (using the [VS Code extension](https://marketplace.visualstudio.com/items?itemName=GitHub.copilot-chat)).*
+
+![](media/exportCopilot.png)
+*Based on the comment and function declaration, GitHub Copilot wrote this whole template export function, which ran first-time.*
 
 ## How to use - Prerequisites
 
