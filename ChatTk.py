@@ -1,9 +1,11 @@
 import tkinter as tk
 import tkinter.messagebox as messagebox
+from tkinter import filedialog
 import openai
 import os
 import threading
 import datetime
+import json
 
 openai.api_type = "azure"
 openai.api_version = "2023-03-15-preview"
@@ -20,7 +22,7 @@ except Exception:
 
 model_deployment_name = "gpt-4" # customize this for your own model deployment within the Azure OpenAI Service (e.g. "gpt-4", "gpt-4-32k", "gpt-35-turbo")
 
-chatbot_name = "ChatPTS"
+chatbot_name = "ChatTk"
 system_message = "Your name is " + chatbot_name + ". You are a large language model. You are using the " + model_deployment_name + " AI model via the Azure OpenAI Service. Answer as concisely as possible. Knowledge cutoff: September 2021. Current date: "+str(datetime.date.today())
 
 chathistory = [{"role":"system","content":system_message}]
@@ -31,7 +33,7 @@ font_text = "Consolas 11"
 
 # Set variables - https://learn.microsoft.com/en-us/azure/cognitive-services/openai/reference
 
-var_temperature = 0.5 # between 0 and 1
+var_temperature = 0.7 # between 0 and 1
 var_top_p=0.95 # between 0 and 1
 var_max_tokens = 800 # between 1 and 32,768
 var_frequency_penalty = 0 # between -2.0 and 2.0
@@ -388,7 +390,7 @@ def open_api_options_window():
 
     # Create a button to reset the API options to the default values
     def reset_api_options():
-        temperature_slider.set(0.5)
+        temperature_slider.set(0.7)
         top_p_slider.set(0.95)
         max_tokens_spinbox.delete(0, tk.END); max_tokens_spinbox.insert(0, 800)
         frequency_penalty_slider.set(0)
@@ -405,6 +407,83 @@ def open_api_options_window():
     cancel_button = tk.Button(api_options_window, text="Cancel", command=cancel_and_close)
     cancel_button.pack(side="left", padx=82, pady=5)
 
+# Create a function which allows the user to pick a .json file to import the API options from
+def open_import_template():
+    # Create a file dialog to select the .json file
+    file_path = filedialog.askopenfilename(initialdir=os.getcwd(), title="Select a file", filetypes=(("JSON files", "*.json"), ("All files", "*.*")))
+    if file_path != "":
+
+        # Try to open the .json file and load the data, but catch any errors and display a message box
+        try:
+
+            # Open the .json file and load the data
+            with open(file_path, "r", encoding="utf-8") as file:
+                data = json.load(file)
+
+            clear_chat()
+
+            global model_deployment_name
+            global system_message
+            global var_temperature
+            global var_top_p
+            global var_max_tokens
+            global var_frequency_penalty
+            global var_presence_penalty
+            global chathistory
+            global chatbot_name
+
+            # Set the model deployment name
+            model_deployment_name = data["chatParameters"]["deploymentName"]
+
+            # Set the system message
+            system_message = data["systemPrompt"]
+            chathistory = [{"role":"system","content":system_message}]
+
+            # Set the API options
+            var_temperature = data["chatParameters"]["temperature"]
+            var_top_p = data["chatParameters"]["topProbablities"]
+            var_max_tokens = data["chatParameters"]["maxResponseLength"]
+            var_frequency_penalty = data["chatParameters"]["frequencyPenalty"]
+            var_presence_penalty = data["chatParameters"]["presencePenalty"]
+
+            # Set the chat bot name to the name of the .json file (without the extension)
+            chatbot_name = os.path.basename(file_path).split(".")[0]
+            root.title(chatbot_name)
+        
+        except Exception as e:
+            messagebox.showerror("Error", "An error occurred while trying to import the API options from the selected template file.\n\n" + str(e))
+
+# Create a function which takes the System Message and API Options and exports the data to a .json file, using the chat bot name as the file name, allowing the user to choose the save location with a file dialog
+def open_export_template():
+    # Create a file dialog to select the save location
+    file_path = filedialog.asksaveasfilename(initialdir=os.getcwd(), title="Select a file", filetypes=(("JSON files", "*.json"), ("All files", "*.*")), initialfile=chatbot_name + ".json")
+    if file_path != "":
+
+        # Try to save the .json file, but catch any errors and display a message box
+        try:
+
+            # Create a dictionary containing the System Message and API Options
+            data = {
+                "systemPrompt": system_message,
+                "chatParameters": {
+                    "deploymentName": model_deployment_name,
+                    "temperature": var_temperature,
+                    "topProbablities": var_top_p,
+                    "maxResponseLength": var_max_tokens,
+                    "frequencyPenalty": var_frequency_penalty,
+                    "presencePenalty": var_presence_penalty,
+                    "stopSequences": None,
+                    "pastMessagesToInclude":10
+                }
+            }
+
+            # Save the .json file
+            with open(file_path, "w", encoding="utf-8") as file:
+                json.dump(data, file, indent=4, ensure_ascii=False)
+
+        except Exception as e:
+            messagebox.showerror("Error", "An error occurred while trying to export the API options to the selected template file.\n\n" + str(e))
+            
 # Create the GUI root window
 root = tk.Tk()
 root.title(chatbot_name)
@@ -427,7 +506,9 @@ file_menu.add_command(label="Exit", command=root.quit)
 options_menu = tk.Menu(menu_bar, tearoff=0)
 options_menu.add_command(label="Chat bot name", command=open_chatbot_name_window)
 options_menu.add_command(label="System message", command=open_system_message_window)
-options_menu.add_command(label="API Options", command=open_api_options_window)
+options_menu.add_command(label="API options", command=open_api_options_window)
+options_menu.add_command(label="Import template", command=open_import_template)
+options_menu.add_command(label="Export template", command=open_export_template)
 
 # Create the 'Help' menu
 help_menu = tk.Menu(menu_bar, tearoff=0)
@@ -463,7 +544,7 @@ input_box.config(yscrollcommand=input_scrollbar.set)
 # Bind the "Return" key to the "Send" button
 input_box.bind("<Return>", handle_return)
 
-# Create the "Ask ChatPTS" button aligned to the right of the form with 16px buffer space
+# Create the "Send" button aligned to the right of the form with 16px buffer space
 ask_button = tk.Button(root, text="Send", command=send, height=2, width=10)
 ask_button.pack(side="right", padx=16, pady=5)
 
