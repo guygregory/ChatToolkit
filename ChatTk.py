@@ -27,7 +27,7 @@ system_message = "Your name is " + chatbot_name + ". You are a large language mo
 
 chathistory = [{"role":"system","content":system_message}]
 
-icon_path = "icon16.ico"
+icon_path = "icon16ChatTk.ico"
 
 font_text = "Consolas 11"
 
