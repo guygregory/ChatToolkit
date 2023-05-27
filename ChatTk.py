@@ -41,6 +41,9 @@ var_presence_penalty = 0 # between -2.0 and 2.0
 
 # Function to get the response from the OpenAI API after the 'Send' button is clicked
 def send():
+    
+    ask_button.config(state="disabled")
+    clear_button.config(state="disabled")
     # Get the user's prompt from the input box
     input_text = input_box.get("1.0", "end")
 
@@ -62,38 +65,57 @@ def send():
 
 # Function to call the OpenAI API in a separate thread to prevent locking-up the application while waiting for the API response
 def call_api(input_text):
-    try:
-        response = openai.ChatCompletion.create(
-            engine=model_deployment_name,
-            messages=chathistory,
-            temperature=var_temperature,
-            max_tokens=var_max_tokens,
-            top_p=var_top_p,
-            frequency_penalty=var_frequency_penalty,
-            presence_penalty=var_presence_penalty,
-            stop=None)
 
-        # Get the response from the API and insert it into the chat history
-        response_dict = response.to_dict()
-        content = response_dict['choices'][0]['message']['content']
-        contentdict = {"role":"assistant","content":content}
-        chathistory.append(contentdict)
+    def generate_text():
+        
+        try:      
+            reply = ""
+            chatbot_name_displayed=False
+            for chunk in openai.ChatCompletion.create(
+                
+                engine=model_deployment_name,
+                messages=chathistory,
+                temperature=var_temperature,
+                max_tokens=var_max_tokens,
+                top_p=var_top_p,
+                frequency_penalty=var_frequency_penalty,
+                presence_penalty=var_presence_penalty,
+                stop=None,
+                stream=True,
+            ):
+                content = chunk["choices"][0].get("delta", {}).get("content")
+                if content is not None:
+                    if chatbot_name_displayed == False:
+                        output_box.configure(state="normal")
+                        output_box.insert("end", chatbot_name +": ")
+                        output_box.configure(state="disabled")
+                        chatbot_name_displayed=True
+                    output_box.configure(state="normal")
+                    output_box.insert("end", content)
+                    output_box.configure(state="disabled")
+                    output_box.see("end")
+                    reply = reply+content
+            
+            output_box.configure(state="normal")
+            #Insert two new lines after the response
+            output_box.insert("end", "\n\n")
+            output_box.configure(state="disabled")
+            output_box.see("end")
+            
+            # Insert the chatbot's response into the chat history
+            contentdict = {"role":"assistant","content":reply}
+            chathistory.append(contentdict)
 
-        # Display the response in the output box
-        display_response(content)
+        except openai.error.OpenAIError as e:
+            messagebox.showerror("Error", f"Azure OpenAI API Error: {e}")
 
-        # If the request fails for any reason (e.g. no internet connection, rate limit exceed, etc.), display the error message in a message box and continue
-    except openai.error.OpenAIError as e:
-        messagebox.showerror("Error", f"Azure OpenAI API Error: {e}")
+        ask_button.config(state="normal")
+        clear_button.config(state="normal")
 
-# Function to display the response in the output box
-def display_response(content):
+    # Create a new thread to run the generate_text function
+    thread = threading.Thread(target=generate_text)
+    thread.start()
 
-    output_box.configure(state="normal")
-    # Insert the response into the output box
-    output_box.insert("end", chatbot_name +": " + content + "\n\n")
-    output_box.configure(state="disabled")
-    output_box.see("end") # Scroll to the bottom of the output box
 
 # Function to clear the chat boxes, and reset the chat history
 def clear_chat():
@@ -126,7 +148,8 @@ def open_about_window():
     about_window.geometry("250x150")
 
     # Create a Label to display the About message
-    about_message = "Created by Guy Gregory\nguy.gregory@microsoft.com\nhttps://aka.ms/ChatPTS"
+
+    about_message = "Created by Guy Gregory\nguy.gregory@microsoft.com\nhttps://aka.ms/ChatToolkit"
     about_label = tk.Label(about_window, text=about_message, font=font_text)
     about_label.pack(side="top", fill="both", expand=True)
 
