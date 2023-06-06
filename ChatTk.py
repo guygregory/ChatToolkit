@@ -25,9 +25,13 @@ model_deployment_name = "gpt-4" # customize this for your own model deployment w
 chatbot_name = "ChatTk"
 system_message = "Your name is " + chatbot_name + ". You are a large language model. You are using the " + model_deployment_name + " AI model via the Azure OpenAI Service. Answer as concisely as possible. Knowledge cutoff: September 2021. Current date: "+str(datetime.date.today())
 
-chathistory = [{"role":"system","content":system_message}]
+system_message_chunk = [{"role":"system","content":system_message}]
+few_shot_chunk = []
+chat_history_chunk = []
 
 icon_path = "icon16ChatTk.ico"
+
+few_shot_examples = []
 
 font_text = "Consolas 11"
 
@@ -38,6 +42,7 @@ var_top_p=0.95 # between 0 and 1
 var_max_tokens = 800 # between 1 and 32,768
 var_frequency_penalty = 0 # between -2.0 and 2.0
 var_presence_penalty = 0 # between -2.0 and 2.0
+var_past_messages_included = 10 # between 1 and 20
 
 # Function to get the response from the OpenAI API after the 'Send' button is clicked
 def send():
@@ -53,18 +58,21 @@ def send():
     output_box.see("end") # Scroll to the bottom of the output box
 
     # Insert the user's prompt into the chat history
-    inputdict = {"role":"assistant","content":input_text}
-    chathistory.append(inputdict)
+    # N.B. I have no idea why I need to rstrip('\n') here, but it prevents trailing new line characters from being added to the chat history
+    inputdict = {"role":"user","content":input_text.rstrip('\n')}
+    chat_history_chunk.append(inputdict)
 
     # Clear the input box
     input_box.delete("1.0", "end")
 
     # Create a new thread for the API call
-    api_thread = threading.Thread(target=call_api, args=(input_text,))
+    api_thread = threading.Thread(target=call_api)
     api_thread.start()
 
+    num_items = len(input_text)
+
 # Function to call the OpenAI API in a separate thread to prevent locking-up the application while waiting for the API response
-def call_api(input_text):
+def call_api():
 
     def generate_text():
         
@@ -74,7 +82,7 @@ def call_api(input_text):
             for chunk in openai.ChatCompletion.create(
                 
                 engine=model_deployment_name,
-                messages=chathistory,
+                messages=system_message_chunk+few_shot_chunk+chat_history_chunk[-var_past_messages_included:],
                 temperature=var_temperature,
                 max_tokens=var_max_tokens,
                 top_p=var_top_p,
@@ -104,7 +112,7 @@ def call_api(input_text):
             
             # Insert the chatbot's response into the chat history
             contentdict = {"role":"assistant","content":reply}
-            chathistory.append(contentdict)
+            chat_history_chunk.append(contentdict)
 
         except openai.error.OpenAIError as e:
             messagebox.showerror("Error", f"Azure OpenAI API Error: {e}")
@@ -123,8 +131,10 @@ def clear_chat():
     output_box.configure(state="normal")
     output_box.delete("1.0", "end")
     output_box.configure(state="disabled")
-    global chathistory
-    chathistory = [{"role":"system","content":system_message}]
+    global chat_history_chunk
+    global system_message_chunk
+    chat_history_chunk = []
+    system_message_chunk = [{"role":"system","content":system_message}]
 
 # Function to handle the "Return" key event
 def handle_return(event):
@@ -271,7 +281,7 @@ def open_api_options_window():
     api_options_window = tk.Toplevel(root)
     api_options_window.title("Edit API Options")
     api_options_window.geometry("400x200")
-    api_options_window.minsize(600, 450)  # Set the minimum width to 600 pixels
+    api_options_window.minsize(600, 480)  # Set the minimum width to 600 pixels
 
     # Set the icon if the file exists, otherwise use the default icon
     if os.path.exists(icon_path):
@@ -379,6 +389,14 @@ def open_api_options_window():
     presence_penalty_slider.grid(column=1, row=9, sticky=tk.W, padx=2)
     presence_penalty_slider.set(var_presence_penalty)
 
+    # Past messages
+    past_messages_label = tk.Label(message_box_frame, text="Past messages included:", font=font_text)
+    past_messages_label.grid(column=0, row=10, sticky=tk.E, padx=5, pady=5)
+
+    past_messages_slider = tk.Scale(message_box_frame, from_=1, to=20, resolution=1, orient=tk.HORIZONTAL, length=165, showvalue=1)
+    past_messages_slider.grid(column=1, row=10, sticky=tk.W, padx=2)
+    past_messages_slider.set(var_past_messages_included)
+
     # Create a button to save and close the window
     def save_and_close():
 
@@ -395,6 +413,7 @@ def open_api_options_window():
         global var_max_tokens
         global var_frequency_penalty
         global var_presence_penalty
+        global var_past_messages_included
         
         system_message = system_message.replace(model_deployment_name, model_deployment_name_entry.get(), 1)
         model_deployment_name = model_deployment_name_entry.get()
@@ -404,6 +423,7 @@ def open_api_options_window():
         var_frequency_penalty=frequency_penalty_slider.get()
         var_presence_penalty=presence_penalty_slider.get()
         var_max_tokens=int(max_tokens_spinbox.get())
+        var_past_messages_included=int(past_messages_slider.get())
 
         api_options_window.destroy()
         clear_chat()
@@ -418,6 +438,7 @@ def open_api_options_window():
         max_tokens_spinbox.delete(0, tk.END); max_tokens_spinbox.insert(0, 800)
         frequency_penalty_slider.set(0)
         presence_penalty_slider.set(0)
+        past_messages_slider.set(10)
 
     reset_api_options_button = tk.Button(api_options_window, text="Reset to defaults", command=reset_api_options)
     reset_api_options_button.pack(side="left", padx=97, pady=5)
@@ -452,15 +473,28 @@ def open_import_template():
             global var_max_tokens
             global var_frequency_penalty
             global var_presence_penalty
-            global chathistory
+            global chat_history_chunk
+            global system_message_chunk
             global chatbot_name
+            global few_shot_examples
 
             # Set the model deployment name
             model_deployment_name = data["chatParameters"]["deploymentName"]
 
             # Set the system message
             system_message = data["systemPrompt"]
-            chathistory = [{"role":"system","content":system_message}]
+            
+            few_shot_jsondata = data["fewShotExamples"]
+            
+            # Iterate over the list and modify the key 'userInput' to 'user'
+            few_shot_examples = []
+            for item in few_shot_jsondata:
+                modified_item = {'user': item['userInput'], 'assistant': item['chatbotResponse']}
+                few_shot_examples.append(modified_item)
+            
+            update_few_shot_chunk()
+
+            system_message_chunk = [{"role":"system","content":system_message}]
 
             # Set the API options
             var_temperature = data["chatParameters"]["temperature"]
@@ -478,6 +512,13 @@ def open_import_template():
 
 # Create a function which takes the System Message and API Options and exports the data to a .json file, using the chat bot name as the file name, allowing the user to choose the save location with a file dialog
 def open_export_template():
+    
+    # Change the format of the few_shot_examples to match the format of the template
+    few_shot_jsondata = []
+    for item in few_shot_examples:
+        modified_item = {'userInput': item['user'], 'chatbotResponse': item['assistant']}
+        few_shot_jsondata.append(modified_item)
+    
     # Create a file dialog to select the save location
     file_path = filedialog.asksaveasfilename(initialdir=os.getcwd(), title="Select a file", filetypes=(("JSON files", "*.json"), ("All files", "*.*")), initialfile=chatbot_name + ".json")
     if file_path != "":
@@ -488,6 +529,7 @@ def open_export_template():
             # Create a dictionary containing the System Message and API Options
             data = {
                 "systemPrompt": system_message,
+                "fewShotExamples": few_shot_jsondata,
                 "chatParameters": {
                     "deploymentName": model_deployment_name,
                     "temperature": var_temperature,
@@ -504,9 +546,181 @@ def open_export_template():
             with open(file_path, "w", encoding="utf-8") as file:
                 json.dump(data, file, indent=4, ensure_ascii=False)
 
+            # Display a message box to confirm the file was saved successfully
+            messagebox.showinfo("Success", "The API options were successfully exported to the selected template file.")
+
         except Exception as e:
             messagebox.showerror("Error", "An error occurred while trying to export the API options to the selected template file.\n\n" + str(e))
-            
+
+def open_few_shot_window():
+    
+    # Create a new window
+    global few_shot_window
+    few_shot_window = tk.Toplevel(root)
+    few_shot_window.transient(root)
+    few_shot_window.title("Few shot examples")
+
+    container = tk.Frame(few_shot_window)
+    canvas = tk.Canvas(container, width=600, height=715)
+    scrollbar = tk.Scrollbar(container, orient="vertical", command=canvas.yview)
+    global scrollable_frame
+    scrollable_frame = tk.Frame(canvas, width=600, height=715)
+
+
+    scrollable_frame.bind(
+        "<Configure>",
+        lambda e: canvas.configure(
+            scrollregion=canvas.bbox("all")
+        )
+    )
+
+    canvas.create_window((0, 0), window=scrollable_frame, anchor="nw")
+    canvas.configure(yscrollcommand=scrollbar.set)
+    create_widgets()
+
+    container.pack()
+    canvas.pack(side="left", fill="both", expand=True)
+    scrollbar.pack(side="right", fill="y")
+
+    save_button = tk.Button(few_shot_window, text="Save and close", command=fs_save_and_close)
+    save_button.pack(side="left", padx=6, pady=5)
+
+    cancel_button = tk.Button(few_shot_window, text="Cancel", command=fs_cancel_and_close)
+    cancel_button.pack(side="right", padx=16, pady=5)
+
+
+def add_example():
+
+    check_for_empty_examples()
+    if breakFlag==False:
+        update_few_shot_examples_from_UI()
+    else:
+        return
+
+
+    update_few_shot_examples_from_UI()
+    # Add a new example to the list
+    few_shot_examples.append({"user": "", "assistant": ""})
+
+    # Destroy all existing widgets
+    for widget in scrollable_frame.winfo_children():
+        widget.destroy()
+
+    # Recreate all few_shot_example widgets from scratch using the updated list
+    create_widgets()
+
+def create_widgets():
+    # Function to recreate all few_shot_example widgets from scratch using the updated list
+    i = 0
+
+    for example in few_shot_examples:
+
+        # Create a label for the user input
+        user_input_label = tk.Label(scrollable_frame, text="User:")
+        user_input_label.grid(row=(i*5), column=0, sticky="W")
+
+        # Create a text box for the user input
+        user_input = tk.Text(scrollable_frame, font=font_text, width=72, height=4, wrap="word")
+        user_input.insert("1.0", example["user"])
+        user_input.grid(row=(i*5)+1, column=0)
+
+        # Create a vertical scrollbar and attach it to the user_input text box
+        user_input_scrollbar = tk.Scrollbar(scrollable_frame, orient="vertical", command=user_input.yview)
+        user_input_scrollbar.grid(row=(i*5)+1, column=1, sticky="NS")
+        user_input["yscrollcommand"] = user_input_scrollbar.set
+        
+        # Create a label for the assistant response
+        chatbot_response_label = tk.Label(scrollable_frame, text="Assistant:")
+        chatbot_response_label.grid(row=(i*5)+2, column=0, sticky="W")
+        
+        # Create a text box for the chatbot response
+        chatbot_response = tk.Text(scrollable_frame, font=font_text, width=72, height=4, wrap="word")
+        chatbot_response.insert("1.0", example["assistant"])
+        chatbot_response.grid(row=(i*5)+3, column=0)
+
+        # Create a vertical scrollbar and attach it to the chatbot_response text box
+        chatbot_response_scrollbar = tk.Scrollbar(scrollable_frame, orient="vertical", command=chatbot_response.yview)
+        chatbot_response_scrollbar.grid(row=(i*5)+3, column=1, sticky="NS")
+        chatbot_response["yscrollcommand"] = chatbot_response_scrollbar.set
+        
+        # Create a blank label to separate the examples
+        blank_label = tk.Label(scrollable_frame, text=" ")
+        blank_label.grid(row=(i*5)+4, column=0)
+        
+        # Create a delete button for the example
+        delete_button = tk.Button(scrollable_frame, text="🗑️", command=lambda i=i: delete_example(i))
+        delete_button.grid(row=(i*5), column=0, sticky="E")
+
+        i += 1
+
+    # Create a add button for the example, which is left-aligned within the cell
+    add_button = tk.Button(scrollable_frame, text="Add an example", command=add_example)
+    add_button.grid(row=(i*5)+5, column=0, sticky="W")   
+
+
+
+def check_for_empty_examples():
+    global breakFlag
+    breakFlag=False
+    for widget in scrollable_frame.winfo_children():
+        if widget.widgetName=="text":
+            if widget.get("1.0", "end-1c")=="":
+                messagebox.showwarning(parent=few_shot_window, title="Missing Entry", message="Please complete the text in all items or delete incomplete pairs before proceeding.")
+                #messagebox.showinfo(parent=few_shot_window, title="Info", message="This is a non-modal messagebox.")
+                breakFlag=True
+                break
+
+def update_few_shot_examples_from_UI():
+    
+    global few_shot_examples
+
+    saved_text=[]
+    for widget in scrollable_frame.winfo_children():
+        if widget.widgetName=="text":
+            saved_text.append(widget.get("1.0", "end-1c"))
+    saved_chat=[]
+    for index, text_element in enumerate(saved_text):
+        if index % 2 == 0:
+            saved_chat.append({"user": text_element})
+        else:
+            #saved_chat.append({"assistant": text_element})
+            saved_chat[-1]["assistant"]=text_element
+    few_shot_examples=saved_chat
+    
+
+def delete_example(index):
+    # Remove the example from the list
+    few_shot_examples.pop(index)
+
+    # Destroy all existing widgets
+    for widget in scrollable_frame.winfo_children():
+        widget.destroy()
+
+    # Recreate all few_shot_example widgets from scratch using the updated list
+    create_widgets()
+
+def update_few_shot_chunk():
+    global few_shot_chunk
+    few_shot_chunk = []
+    for item in few_shot_examples:
+        few_shot_chunk.append({"role": "user", "content": item["user"]})
+        few_shot_chunk.append({"role": "assistant", "content": item["assistant"]})
+
+# Create a button to save and close the window
+def fs_save_and_close():
+    check_for_empty_examples()
+    if breakFlag==False:
+        update_few_shot_examples_from_UI()
+        update_few_shot_chunk()
+        few_shot_window.destroy()
+    else:
+        return
+
+# Create a button to cancel and close the window
+def fs_cancel_and_close():
+    # Close the window without saving
+    few_shot_window.destroy()
+
 # Create the GUI root window
 root = tk.Tk()
 root.title(chatbot_name)
@@ -532,6 +746,7 @@ options_menu.add_command(label="System message", command=open_system_message_win
 options_menu.add_command(label="API options", command=open_api_options_window)
 options_menu.add_command(label="Import template", command=open_import_template)
 options_menu.add_command(label="Export template", command=open_export_template)
+options_menu.add_command(label="Few-shot examples", command=open_few_shot_window)
 
 # Create the 'Help' menu
 help_menu = tk.Menu(menu_bar, tearoff=0)
