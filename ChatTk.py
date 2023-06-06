@@ -477,6 +477,7 @@ def open_import_template():
             global system_message_chunk
             global chatbot_name
             global few_shot_examples
+            global var_past_messages_included
 
             # Set the model deployment name
             model_deployment_name = data["chatParameters"]["deploymentName"]
@@ -502,6 +503,7 @@ def open_import_template():
             var_max_tokens = data["chatParameters"]["maxResponseLength"]
             var_frequency_penalty = data["chatParameters"]["frequencyPenalty"]
             var_presence_penalty = data["chatParameters"]["presencePenalty"]
+            var_past_messages_included = data["chatParameters"]["pastMessagesToInclude"]
 
             # Set the chat bot name to the name of the .json file (without the extension)
             chatbot_name = os.path.basename(file_path).split(".")[0]
