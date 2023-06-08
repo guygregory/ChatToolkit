@@ -17,7 +17,7 @@ As a Partner Technololgy Strategist (PTS) at Microsoft, I wanted to create a sim
 
 ![](media/APIOptions.png)
 
-*The API Options allow the model parameters to be tuned, and reflects the controls in Azure OpenAI Studio.*
+*The API Options allow the model parameters to be adjusted, and reflects the controls in [Azure OpenAI Studio](https://oai.azure.com/portal).*
 
 ![](media/FewShot.png)
 
