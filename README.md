@@ -16,9 +16,11 @@ As a Partner Technololgy Strategist (PTS) at Microsoft, I wanted to create a sim
 *Based on the comment and function declaration, GitHub Copilot wrote this whole template export function, which ran first-time.*
 
 ![](media/APIOptions.png)
+
 *The API Options allow the model parameters to be tuned, and reflects the controls in Azure OpenAI Studio.*
 
 ![](media/FewShot.png)
+
 *If zero-shot (system prompt-only) doesn't suffice, few-shot examples can be used to guide the model further*
 
 ## How to use - Prerequisites
