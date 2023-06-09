@@ -18,7 +18,7 @@ except KeyError:
 try:
     openai.api_base = os.environ['OPENAI_API_BASE']
 except Exception:
-    openai.api_base = ""
+    openai.api_base = "https://<INSTANCE-NAME>.openai.azure.com/"
 
 model_deployment_name = "gpt-4" # customize this for your own model deployment within the Azure OpenAI Service (e.g. "gpt-4", "gpt-4-32k", "gpt-35-turbo")
 
