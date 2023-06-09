@@ -8,7 +8,7 @@ import datetime
 import json
 
 openai.api_type = "azure"
-openai.api_version = "2023-03-15-preview"
+openai.api_version = "2023-05-15"
 
 try:
     openai.api_key = os.environ['OPENAI_API_KEY']
