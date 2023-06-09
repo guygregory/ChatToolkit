@@ -37,7 +37,11 @@ As a Partner Technololgy Strategist (PTS) at Microsoft, I wanted to create a sim
 * The app requires that you have Python installed, which can be downloaded [here (python.org)](https://www.python.org/downloads/) or [here (Microsoft Store)](https://www.microsoft.com/store/productId/9NRWMJP3717K)
 * The app requires the [OpenAI](https://pypi.org/project/openai/) Python library (pip install openai)
 * Download/clone the script onto your local computer
-* Add the OPENAI_API_KEY and OPENAI_API_BASE environmental variables on your PC using the details from your own Azure OpenAI instance. [Use the guide here](https://learn.microsoft.com/azure/cognitive-services/openai/chatgpt-quickstart?tabs=command-line&pivots=programming-language-python#environment-variables) to understand how to set environmental variables. You'll also need to edit the model name, unless you named it 'gpt-4'
+* Add the OPENAI_API_KEY and OPENAI_API_BASE environmental variables on your PC using the details from your own Azure OpenAI instance. [Use the guide here](https://learn.microsoft.com/azure/cognitive-services/openai/chatgpt-quickstart?tabs=command-line&pivots=programming-language-python#environment-variables) to understand how to set environmental variables.  
+*For example, on Windows:*  
+*setx OPENAI_API_BASE "https://<INSTANCE-NAME>.openai.azure.com/"*  
+*setx OPENAI_API_KEY "1234567890abcdef1234567890abcdef"*    
+* Edit the model name, unless you named it 'gpt-4'
 * When running the .py script, a Tkinter form should appear as per the above screenshot
 
 ## Please note
