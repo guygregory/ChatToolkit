@@ -66,13 +66,10 @@ var_frequency_penalty = 0 # between -2.0 and 2.0
 var_presence_penalty = 0 # between -2.0 and 2.0
 var_past_messages_included = 10 # between 1 and 20
 
-def update_system_message(chatbot_name, model, vehicle_json):
-    global system_message
-    global system_message_chunk
-    system_message = "Your name is " + chatbot_name + ". You are a large language model. You are using the " + model + " AI model via the Azure OpenAI Service. Answer as concisely as possible. Knowledge cutoff: October 2023. Current date: "+str(datetime.date.today())
-    system_message_chunk = [{"role":"system","content":system_message}]
-
-update_system_message(chatbot_name, model, vehicle_json)
+global system_message
+global system_message_chunk
+system_message = "Your name is " + chatbot_name + ". You are a large language model. You are using the " + model + " AI model via the Azure OpenAI Service. Answer as concisely as possible. Knowledge cutoff: October 2023. Current date: "+str(datetime.date.today())
+system_message_chunk = [{"role":"system","content":system_message}]
 
 few_shot_chunk = []
 chat_history_chunk = []
