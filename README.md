@@ -13,12 +13,10 @@ As a Partner Technololgy Strategist (PTS) at Microsoft, I wanted to create a sim
 *Here's an example of how I used GitHub Copilot Chat to provide some simple error handling (using the [VS Code extension](https://marketplace.visualstudio.com/items?itemName=GitHub.copilot-chat)).*
 
 ![](media/exportCopilot.png)
-*Based on the comment and function declaration, GitHub Copilot wrote this whole template export function, which ran first-time.*
+*Based on the comment and function declaration, GitHub Copilot wrote this whole template export function, which ran first-time.
+![](media/APIOptions-4o-v2.png)
 
-![](media/APIOptions-4o-2.png)
-
-*The API Options allow the model parameters to be adjusted, and reflects the controls in [Azure OpenAI Studio](https://oai.azure.com/portal).*
-
+*The API Options allow the model parameters to be adjusted, and reflects the controls in [Azure OpenAI Studio](https://oai.azure.com/portal)*
 ![](media/FewShot.png)
 
 *If zero-shot (system prompt-only) doesn't suffice, few-shot examples can be used to guide the model further*
@@ -26,10 +24,11 @@ As a Partner Technololgy Strategist (PTS) at Microsoft, I wanted to create a sim
 ## How to use - Prerequisites
 
 * Before deploying Azure OpenAI, please gain approval for your Azure subscription. [Here's the form](https://aka.ms/oai/access) (currently business customers/managed partners/MSFT internal only)
-* **GPT-4** (Optional) At time of writing, GPT-4 models are currently in preview. Once you've had Azure OpenAI approved for your subscription, [you can apply for GPT-4 by filling out this form](https://aka.ms/oai/get-gpt4)
-* **GPT-4** (Optional) At time of writing, GPT-4 models are only available in East US and South Central US Azure regions. Check [this page](https://learn.microsoft.com/en-us/azure/cognitive-services/openai/concepts/models#gpt-4-models) for new regions added in future.
 * Once you've had approval, you'll need to deploy the Azure OpenAI service into your subscription. [Instructions are on the Microsoft Docs page.](https://learn.microsoft.com/en-us/azure/cognitive-services/openai/how-to/create-resource?pivots=web-portal)
 * Next, you'll need to [deploy at least one model](https://learn.microsoft.com/en-us/azure/cognitive-services/openai/how-to/create-resource?pivots=web-portal#deploy-a-model), either the standard GPT-3.5 Turbo model, or GPT-4/GPT-4-32k if you have access.
+* **GPT-4o** This app will work best with the GPT-4o model, although any model which can be used with version 1.x of the OpenAI Python Library should also work fine (inc. GPT-3.5 Turbo and other versions of GPT-4)
+* **Regions** Not all models are available in every Azure region. Check [this page]([https://learn.microsoft.com/en-us/azure/cognitive-services/openai/concepts/models#gpt-4-models](https://learn.microsoft.com/en-us/azure/ai-services/openai/concepts/models#gpt-4-and-gpt-4-turbo-model-availability)) to check region availability.
+
 
 ![](media/Models2v4.png)
 
@@ -53,3 +52,4 @@ As a Partner Technololgy Strategist (PTS) at Microsoft, I wanted to create a sim
 
 *  Reach me on [Twitter @guygregory](https://twitter.com/guygregory) or [LinkedIn](https://linkedin.com/in/guygregory)
 *  Found a bug? Have a suggestion? Please create a [new issue](https://github.com/guygregory/ChatToolkit/issues)!
+
