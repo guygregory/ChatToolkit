@@ -1,33 +1,55 @@
 import tkinter as tk
 import tkinter.messagebox as messagebox
 from tkinter import filedialog
+import asyncio
+from openai import AzureOpenAI, AsyncAzureOpenAI
 import openai
 import os
+import io
 import threading
 import datetime
 import json
+import urllib
+from PIL import Image, ImageTk
+from dotenv import load_dotenv
 
-openai.api_type = "azure"
-openai.api_version = "2023-05-15"
-
-try:
-    openai.api_key = os.environ['OPENAI_API_KEY']
-except KeyError:
-    openai.api_key = ""
+#Feature Flags for additional functionality 
+Flag_DALLE = False
 
 try:
-    openai.api_base = os.environ['OPENAI_API_BASE']
+    # Loads the following environment variables from the .env file:
+    #AZURE_OPENAI_API_KEY - Obtain from https://portal.azure.com (Azure OpenAI Service > Keys and Endpoint)
+    #AZURE_OPENAI_API_BASE - Obtain from https://oai.azure.com/portal (Azure OpenAI Service > Keys and Endpoint)
+    #DALLE_API_KEY - Obtain from https://oai.azure.com/portal
+    #DALLE_API_ENDPOINT - Obtain from https://oai.azure.com/portal
+    load_dotenv()
+    AZURE_OPENAI_API_KEY = os.environ['AZURE_OPENAI_API_KEY']
+    AZURE_OPENAI_API_ENDPOINT = os.environ['AZURE_OPENAI_API_ENDPOINT']
+    AZURE_OPENAI_API_MODEL = os.environ['AZURE_OPENAI_API_MODEL']
+    AZURE_OPENAI_API_VERSION = os.environ['AZURE_OPENAI_API_VERSION']
+    if Flag_DALLE:
+        DALLE_API_KEY = os.environ['DALLE_API_KEY']
+        DALLE_API_ENDPOINT = os.environ['DALLE_API_ENDPOINT']
+        DALLE_API_MODEL = os.environ['DALLE_API_MODEL']
+
 except Exception:
-    openai.api_base = "https://<INSTANCE-NAME>.openai.azure.com/"
+    # pop up an error message staring the .env file could not be found
+    messagebox.showerror("Error", "The .env file could not be found. Please ensure the .env file is in the same folder as the ChatAA executable.")
+    # exit the application
+    exit()
 
-model_deployment_name = "gpt-4" # customize this for your own model deployment within the Azure OpenAI Service (e.g. "gpt-4", "gpt-4-32k", "gpt-35-turbo")
+version = AZURE_OPENAI_API_VERSION
+key = AZURE_OPENAI_API_KEY
+endpoint = AZURE_OPENAI_API_ENDPOINT
+model = AZURE_OPENAI_API_MODEL # customize this for your own model deployment within the Azure OpenAI Service (e.g. "gpt-4", "gpt-4-32k", "gpt-35-turbo")
+
+client = AsyncAzureOpenAI(
+    azure_endpoint = endpoint,
+    api_key = key,
+    api_version = version
+    )
 
 chatbot_name = "ChatTk"
-system_message = "Your name is " + chatbot_name + ". You are a large language model. You are using the " + model_deployment_name + " AI model via the Azure OpenAI Service. Answer as concisely as possible. Knowledge cutoff: September 2021. Current date: "+str(datetime.date.today())
-
-system_message_chunk = [{"role":"system","content":system_message}]
-few_shot_chunk = []
-chat_history_chunk = []
 
 icon_path = "icon16ChatTk.ico"
 
@@ -44,14 +66,27 @@ var_frequency_penalty = 0 # between -2.0 and 2.0
 var_presence_penalty = 0 # between -2.0 and 2.0
 var_past_messages_included = 10 # between 1 and 20
 
+def update_system_message(chatbot_name, model, vehicle_json):
+    global system_message
+    global system_message_chunk
+    system_message = "Your name is " + chatbot_name + ". You are a large language model. You are using the " + model + " AI model via the Azure OpenAI Service. Answer as concisely as possible. Knowledge cutoff: October 2023. Current date: "+str(datetime.date.today())
+    system_message_chunk = [{"role":"system","content":system_message}]
+
+update_system_message(chatbot_name, model, vehicle_json)
+
+few_shot_chunk = []
+chat_history_chunk = []
+
 # Function to get the response from the OpenAI API after the 'Send' button is clicked
 def send():
-    
+    global chat_history_chunk
+
     ask_button.config(state="disabled")
     clear_button.config(state="disabled")
+    if Flag_DALLE:
+        dalle_button.config(state="disabled")
     # Get the user's prompt from the input box
     input_text = input_box.get("1.0", "end")
-
     output_box.configure(state="normal")
     output_box.insert("end", "User: " + " "*(len(chatbot_name)-4) + input_text+"\n")
     output_box.configure(state="disabled")
@@ -69,8 +104,6 @@ def send():
     api_thread = threading.Thread(target=call_api)
     api_thread.start()
 
-    num_items = len(input_text)
-
 # Function to call the OpenAI API in a separate thread to prevent locking-up the application while waiting for the API response
 def call_api():
 
@@ -78,31 +111,38 @@ def call_api():
         
         try:      
             reply = ""
-            chatbot_name_displayed=False
-            for chunk in openai.ChatCompletion.create(
-                
-                engine=model_deployment_name,
-                messages=system_message_chunk+few_shot_chunk+chat_history_chunk[-var_past_messages_included:],
-                temperature=var_temperature,
-                max_tokens=var_max_tokens,
-                top_p=var_top_p,
-                frequency_penalty=var_frequency_penalty,
-                presence_penalty=var_presence_penalty,
-                stop=None,
-                stream=True,
-            ):
-                content = chunk["choices"][0].get("delta", {}).get("content")
-                if content is not None:
-                    if chatbot_name_displayed == False:
-                        output_box.configure(state="normal")
-                        output_box.insert("end", chatbot_name +": ")
-                        output_box.configure(state="disabled")
-                        chatbot_name_displayed=True
-                    output_box.configure(state="normal")
-                    output_box.insert("end", content)
-                    output_box.configure(state="disabled")
-                    output_box.see("end")
-                    reply = reply+content
+            async def main() -> None:
+                stream = await client.chat.completions.create(
+                    model=model,
+                    messages=system_message_chunk+few_shot_chunk+chat_history_chunk[-var_past_messages_included:],
+                    temperature=var_temperature,
+                    max_tokens=var_max_tokens,
+                    top_p=var_top_p,
+                    frequency_penalty=var_frequency_penalty,
+                    presence_penalty=var_presence_penalty,
+                    stop=None,
+                    stream=True,
+                )
+                reply = ""
+                chatbot_name_displayed=False
+                async for chunk in stream:
+                    if chunk.choices:
+                        if chatbot_name_displayed == False:
+                            output_box.configure(state="normal")
+                            output_box.insert("end", chatbot_name +": ")
+                            output_box.configure(state="disabled")
+                            chatbot_name_displayed=True
+                        
+                        content = chunk.choices[0].delta.content
+                        
+                        if content is not None and isinstance(content, str):
+                            output_box.configure(state="normal")
+                            output_box.insert("end", content)
+                            output_box.configure(state="disabled")
+                            output_box.see("end")
+                            reply = reply + content
+
+            asyncio.run(main())            
             
             output_box.configure(state="normal")
             #Insert two new lines after the response
@@ -114,16 +154,97 @@ def call_api():
             contentdict = {"role":"assistant","content":reply}
             chat_history_chunk.append(contentdict)
 
-        except openai.error.OpenAIError as e:
-            messagebox.showerror("Error", f"Azure OpenAI API Error: {e}")
+        except openai.AuthenticationError as e:
+            # Handle Authentication error here, e.g. invalid API key
+            messagebox.showerror("Error", f"OpenAI API returned an Authentication Error: {e}")
+
+        except openai.APIConnectionError as e:
+            # Handle connection error here
+            messagebox.showerror("Error", f"Failed to connect to OpenAI API: {e}")
+
+        except openai.BadRequestError as e:
+            # Handle connection error here
+            messagebox.showerror("Error", f"Invalid Request Error: {e}")
+
+        except openai.RateLimitError as e:
+            # Handle rate limit error
+            messagebox.showerror("Error", f"OpenAI API request exceeded rate limit: {e}")
+
+        except openai.InternalServerError as e:
+            # Handle Service Unavailable error
+            messagebox.showerror("Error", f"Service Unavailable: {e}")
+
+        except openai.APITimeoutError as e:
+            # Handle request timeout
+            messagebox.showerror("Error", f"Request timed out: {e}")
+            
+        except openai.APIError as e:
+            # Handle API error here, e.g. retry or log
+            messagebox.showerror("Error", f"OpenAI API returned an API Error: {e}")
+
+        except:
+            # Handles all other exceptions
+            messagebox.showerror("Error", f"An exception has occured.")
 
         ask_button.config(state="normal")
         clear_button.config(state="normal")
+        if Flag_DALLE:
+            dalle_button.config(state="normal")
 
     # Create a new thread to run the generate_text function
     thread = threading.Thread(target=generate_text)
     thread.start()
 
+def dalle_prompt_thread():
+    ask_button.config(state="disabled")
+    clear_button.config(state="disabled")
+    if Flag_DALLE:
+        dalle_button.config(state="disabled")
+    t = threading.Thread(target=dalle_prompt)
+    t.start()
+
+def dalle_prompt():
+
+    global DALLE_API_KEY
+    global DALLE_API_ENDPOINT
+    global DALLE_API_MODEL
+    
+    DALLEclient = AzureOpenAI(
+        api_version=AZURE_OPENAI_API_VERSION,
+        azure_endpoint=DALLE_API_ENDPOINT,
+        api_key=DALLE_API_KEY,
+    )
+
+    response = DALLEclient.images.generate(
+        model=DALLE_API_MODEL,
+        prompt='A photo of a car',
+        size='1024x1024',
+        n=1
+        )
+
+    image_url = json.loads(response.model_dump_json())['data'][0]['url']
+
+    # create a new window to display the image
+    image_window = tk.Toplevel(root)
+    image_window.title('DALL·E 3 generated image a car')
+    image_window.geometry("1024x1024")
+
+    # download the image and create a PhotoImage object
+    image_data = urllib.request.urlopen(image_url).read()
+    image = Image.open(io.BytesIO(image_data))
+    photo = ImageTk.PhotoImage(image)
+
+    # create a label to display the image
+    image_label = tk.Label(image_window, image=photo)
+    image_label.pack()
+
+    # update the image label to prevent garbage collection
+    image_label.image = photo
+
+    ask_button.config(state="normal")
+    clear_button.config(state="normal")
+    if Flag_DALLE:
+        dalle_button.config(state="normal")
 
 # Function to clear the chat boxes, and reset the chat history
 def clear_chat():
@@ -234,6 +355,8 @@ def open_system_message_window():
     # Create a new window
     system_message_window = tk.Toplevel(root)
     system_message_window.title("Edit system message")
+    system_message_window.geometry("400x200")
+    system_message_window.minsize(600, 480)  # Set the minimum width to 600 pixels
 
     # Set the icon if the file exists, otherwise use the default icon
     if os.path.exists(icon_path):
@@ -304,7 +427,7 @@ def open_api_options_window():
 
     api_base_entry = tk.Entry(message_box_frame, font=font_text, width=42)
     api_base_entry.grid(column=1, row=0, sticky=tk.W, padx=5, pady=5)
-    api_base_entry.insert(0, openai.api_base)
+    api_base_entry.insert(0, endpoint)
 
     # API key
     api_key_label = tk.Label(message_box_frame, text="API key:", font=font_text)
@@ -312,7 +435,7 @@ def open_api_options_window():
     
     api_key_entry = tk.Entry(message_box_frame,  show="*", font=font_text, width=32)
     api_key_entry.grid(column=1, row=1, sticky=tk.W, padx=5, pady=5)
-    api_key_entry.insert(0, openai.api_key)
+    api_key_entry.insert(0, key)
 
     # Create a button to show/hide the API key
     show_hide_button = tk.Button(message_box_frame, text="Show/hide", command=lambda: toggle_show(api_key_entry))
@@ -324,29 +447,21 @@ def open_api_options_window():
         else:
             entry_widget.configure(show="*")
 
-    # API type
-    api_type_label = tk.Label(message_box_frame, text="API type:", font=font_text)
-    api_type_label.grid(column=0, row=2, sticky=tk.E, padx=5, pady=5)
-
-    api_type_entry = tk.Entry(message_box_frame, font=font_text)
-    api_type_entry.grid(column=1, row=2, sticky=tk.W, padx=5, pady=5)
-    api_type_entry.insert(0, openai.api_type)
-
     # API version
     api_version_label = tk.Label(message_box_frame, text="API version:", font=font_text)
     api_version_label.grid(column=0, row=3, sticky=tk.E, padx=5, pady=5)
 
     api_version_entry = tk.Entry(message_box_frame, font=font_text)
     api_version_entry.grid(column=1, row=3, sticky=tk.W, padx=5, pady=5)
-    api_version_entry.insert(0, openai.api_version)
+    api_version_entry.insert(0, version)
 
     # Model deployment name
-    model_deployment_name_label = tk.Label(message_box_frame, text="Model deployment name:", font=font_text)
-    model_deployment_name_label.grid(column=0, row=4, sticky=tk.E, padx=5, pady=5)
+    model_label = tk.Label(message_box_frame, text="Model deployment name:", font=font_text)
+    model_label.grid(column=0, row=4, sticky=tk.E, padx=5, pady=5)
 
-    model_deployment_name_entry = tk.Entry(message_box_frame, font=font_text)
-    model_deployment_name_entry.grid(column=1, row=4, sticky=tk.W, padx=5, pady=5)
-    model_deployment_name_entry.insert(0, model_deployment_name)
+    model_entry = tk.Entry(message_box_frame, font=font_text)
+    model_entry.grid(column=1, row=4, sticky=tk.W, padx=5, pady=5)
+    model_entry.insert(0, model)
 
     # Max tokens
     max_tokens_label = tk.Label(message_box_frame, text="Max tokens:", font=font_text)
@@ -399,14 +514,16 @@ def open_api_options_window():
 
     # Create a button to save and close the window
     def save_and_close():
-
+        global base
+        global key
+        global version
         # Save the system message and close the window
-        openai.api_base = api_base_entry.get()
-        openai.api_key = api_key_entry.get()
-        openai.api_type = api_type_entry.get()
-        openai.api_version = api_version_entry.get()
+        base = api_base_entry.get()
+        key = api_key_entry.get()
+        #openai.api_type = api_type_entry.get()
+        version = api_version_entry.get()
         
-        global model_deployment_name
+        global model
         global system_message
         global var_temperature
         global var_top_p
@@ -415,8 +532,8 @@ def open_api_options_window():
         global var_presence_penalty
         global var_past_messages_included
         
-        system_message = system_message.replace(model_deployment_name, model_deployment_name_entry.get(), 1)
-        model_deployment_name = model_deployment_name_entry.get()
+        system_message = system_message.replace(model, model_entry.get(), 1)
+        model = model_entry.get()
 
         var_temperature=temperature_slider.get()
         var_top_p=top_p_slider.get()
@@ -466,7 +583,7 @@ def open_import_template():
 
             clear_chat()
 
-            global model_deployment_name
+            global model
             global system_message
             global var_temperature
             global var_top_p
@@ -480,7 +597,7 @@ def open_import_template():
             global var_past_messages_included
 
             # Set the model deployment name
-            model_deployment_name = data["chatParameters"]["deploymentName"]
+            model = data["chatParameters"]["deploymentName"]
 
             # Set the system message
             system_message = data["systemPrompt"]
@@ -533,7 +650,7 @@ def open_export_template():
                 "systemPrompt": system_message,
                 "fewShotExamples": few_shot_jsondata,
                 "chatParameters": {
-                    "deploymentName": model_deployment_name,
+                    "deploymentName": model,
                     "temperature": var_temperature,
                     "topProbablities": var_top_p,
                     "maxResponseLength": var_max_tokens,
@@ -791,6 +908,11 @@ ask_button.pack(side="right", padx=16, pady=5)
 # Create the "Clear chat" button aligned to the left of the form with 16px buffer space
 clear_button = tk.Button(root, text="Clear chat", command=clear_chat, height=2, width=10)
 clear_button.pack(side="left", padx=6, pady=5)
+
+if Flag_DALLE:
+    # create the DALL·E button
+    dalle_button = tk.Button(root, text="DALL·E 3", command=dalle_prompt_thread, height=2, width=10)
+    dalle_button.pack(side="left", padx=5)
 
 # Start the GUI event loop
 root.mainloop()
