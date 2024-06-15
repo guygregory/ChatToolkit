@@ -15,7 +15,7 @@ As a Partner Technololgy Strategist (PTS) at Microsoft, I wanted to create a sim
 ![](media/exportCopilot.png)
 *Based on the comment and function declaration, GitHub Copilot wrote this whole template export function, which ran first-time.*
 
-![](media/APIOptions.png)
+![](media/APIOptions-4o-2.png)
 
 *The API Options allow the model parameters to be adjusted, and reflects the controls in [Azure OpenAI Studio](https://oai.azure.com/portal).*
 
