@@ -5,7 +5,7 @@ Update 16/06/24 - Now supports version 1.x of the OpenAI Python Library. The old
 
 As a Partner Technololgy Strategist (PTS) at Microsoft, I wanted to create a simple app to demonstrate the simplicity of the Azure OpenAI service to our partners and customers. This sample was originally written for the 0.x version of the OpenAI Python library and GPT-3.5, but has recently been updated to use the newer 1.x version of the library, with GPT-4o as the preferred model.
 
-![](/media/APIOptions.png)
+![](/media/APIOptions-4o-2.png)
 
 *The API Options allow the model parameters to be adjusted, and reflects the controls in [Azure OpenAI Studio](https://oai.azure.com/portal).*
 
