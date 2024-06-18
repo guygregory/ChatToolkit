@@ -11,7 +11,6 @@ import datetime
 import json
 import urllib
 from PIL import Image, ImageTk, ImageGrab
-import win32clipboard
 import base64
 
 from dotenv import load_dotenv
@@ -86,6 +85,13 @@ def send():
 
     ask_button.config(state="disabled")
     clear_button.config(state="disabled")
+    add_image_button.config(state="disabled")
+
+    # Disable the Remove Image button, if it's there
+    for widget in root.winfo_children():
+        if isinstance(widget, tk.Button) and widget["text"] == "Remove Image":
+            widget.config(state="disabled")
+
     if Flag_DALLE:
         dalle_button.config(state="disabled")
     # Get the user's prompt from the input box
@@ -97,16 +103,24 @@ def send():
 
     # Insert the user's prompt into the chat history
     # N.B. I have no idea why I need to rstrip('\n') here, but it prevents trailing new line characters from being added to the chat history
-    #inputdict = {"role":"user","content":input_text.rstrip('\n')}
 
     if file_path:
-        IMAGE_PATH = file_path
+        if file_path != "CLIPBOARD":
 
-        def encode_image(image_path):
-            with open(image_path, "rb") as image_file:
-                return base64.b64encode(image_file.read()).decode("utf-8")
+            IMAGE_PATH = file_path
 
-        base64_image = encode_image(IMAGE_PATH)
+            def encode_image(image_path):
+                with open(image_path, "rb") as image_file:
+                    return base64.b64encode(image_file.read()).decode("utf-8")
+
+            base64_image = encode_image(IMAGE_PATH)
+
+        elif file_path == "CLIPBOARD":
+            global gpt4o_image
+
+            buffered = io.BytesIO()
+            gpt4o_image.save(buffered, format="PNG")
+            base64_image = base64.b64encode(buffered.getvalue()).decode("utf-8")
 
         inputdict = {
             "role":"user",
@@ -223,6 +237,13 @@ def call_api():
 
         ask_button.config(state="normal")
         clear_button.config(state="normal")
+        add_image_button.config(state="normal")
+
+        # Enable the Remove Image button, if it's there
+        for widget in root.winfo_children():
+            if isinstance(widget, tk.Button) and widget["text"] == "Remove Image":
+                widget.config(state="normal")
+
         #remove_image()
         if Flag_DALLE:
             dalle_button.config(state="normal")
@@ -234,6 +255,13 @@ def call_api():
 def dalle_prompt_thread():
     ask_button.config(state="disabled")
     clear_button.config(state="disabled")
+    add_image_button.config(state="disabled")
+
+    # Disable the Remove Image button, if it's there
+    for widget in root.winfo_children():
+        if isinstance(widget, tk.Button) and widget["text"] == "Remove Image":
+            widget.config(state="disabled")
+
     if Flag_DALLE:
         dalle_button.config(state="disabled")
     t = threading.Thread(target=dalle_prompt)
@@ -279,6 +307,13 @@ def dalle_prompt():
 
     ask_button.config(state="normal")
     clear_button.config(state="normal")
+    add_image_button.config(state="normal")
+
+    # Enable the Remove Image button, if it's there
+    for widget in root.winfo_children():
+        if isinstance(widget, tk.Button) and widget["text"] == "Remove Image":
+            widget.config(state="enabled")
+
     if Flag_DALLE:
         dalle_button.config(state="normal")
 
@@ -294,6 +329,16 @@ def clear_chat():
     chat_history_chunk = []
     system_message_chunk = [{"role":"system","content":system_message}]
 
+def get_clipboard(event=None):
+    # Check if ImageGrab.grabclipboard() is an image
+    if isinstance(ImageGrab.grabclipboard(), Image.Image):
+        global gpt4o_image
+        global file_path
+        # get the clipboard data and assign to gpt4o_image
+        gpt4o_image = ImageGrab.grabclipboard()
+        file_path = "CLIPBOARD"
+        get_image()
+
 def add_image():
     global file_path
     root = tk.Tk()
@@ -301,24 +346,14 @@ def add_image():
     file_path = filedialog.askopenfilename(filetypes=[("Image files", "*.jpg *.png")])  # Open the file dialog
 
     if file_path:
-        sourceimage = Image.open(file_path)
-        output = io.BytesIO()
-        sourceimage.convert("RGB").save(output, "BMP")
-        data = output.getvalue()[14:]
-        output.close()
-
-        win32clipboard.OpenClipboard()
-        win32clipboard.EmptyClipboard()
-        win32clipboard.SetClipboardData(win32clipboard.CF_DIB, data)
-        win32clipboard.CloseClipboard()
-
+        global gpt4o_image
+        gpt4o_image = Image.open(file_path)
         get_image()
 
     root.destroy()  # Close the Tkinter root window
 
 def get_image(event=None):
     try:
-        gpt4o_image = Image.open(file_path)
         if isinstance(gpt4o_image, Image.Image):
             # Resize the image proportionally to a height of 67 pixels
             base_height = 67
@@ -693,14 +728,14 @@ def open_api_options_window():
 # Create a function which allows the user to pick a .json file to import the API options from
 def open_import_template():
     # Create a file dialog to select the .json file
-    file_path = filedialog.askopenfilename(initialdir=os.getcwd(), title="Select a file", filetypes=(("JSON files", "*.json"), ("All files", "*.*")))
-    if file_path != "":
+    template_file_path = filedialog.askopenfilename(initialdir=os.getcwd(), title="Select a file", filetypes=(("JSON files", "*.json"), ("All files", "*.*")))
+    if template_file_path != "":
 
         # Try to open the .json file and load the data, but catch any errors and display a message box
         try:
 
             # Open the .json file and load the data
-            with open(file_path, "r", encoding="utf-8") as file:
+            with open(template_file_path, "r", encoding="utf-8") as file:
                 data = json.load(file)
 
             clear_chat()
@@ -745,7 +780,7 @@ def open_import_template():
             var_past_messages_included = data["chatParameters"]["pastMessagesToInclude"]
 
             # Set the chat bot name to the name of the .json file (without the extension)
-            chatbot_name = os.path.basename(file_path).split(".")[0]
+            chatbot_name = os.path.basename(template_file_path).split(".")[0]
             root.title(chatbot_name)
         
         except Exception as e:
@@ -761,8 +796,8 @@ def open_export_template():
         few_shot_jsondata.append(modified_item)
     
     # Create a file dialog to select the save location
-    file_path = filedialog.asksaveasfilename(initialdir=os.getcwd(), title="Select a file", filetypes=(("JSON files", "*.json"), ("All files", "*.*")), initialfile=chatbot_name + ".json")
-    if file_path != "":
+    save_file_path = filedialog.asksaveasfilename(initialdir=os.getcwd(), title="Select a file", filetypes=(("JSON files", "*.json"), ("All files", "*.*")), initialfile=chatbot_name + ".json")
+    if save_file_path != "":
 
         # Try to save the .json file, but catch any errors and display a message box
         try:
@@ -784,7 +819,7 @@ def open_export_template():
             }
 
             # Save the .json file
-            with open(file_path, "w", encoding="utf-8") as file:
+            with open(save_file_path, "w", encoding="utf-8") as file:
                 json.dump(data, file, indent=4, ensure_ascii=False)
 
             # Display a message box to confirm the file was saved successfully
@@ -1047,7 +1082,7 @@ if Flag_DALLE:
     dalle_button.pack(side="left", padx=5)
 
 # Bind Ctrl+V to the paste_image function
-root.bind("<Control-v>", get_image)
+root.bind("<Control-v>", get_clipboard)
 
 # Start the GUI event loop
 root.mainloop()
