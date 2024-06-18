@@ -10,7 +10,10 @@ import threading
 import datetime
 import json
 import urllib
-from PIL import Image, ImageTk
+from PIL import Image, ImageTk, ImageGrab
+import win32clipboard
+import base64
+
 from dotenv import load_dotenv
 
 #Feature Flags for additional functionality 
@@ -51,6 +54,8 @@ client = AsyncAzureOpenAI(
 
 chatbot_name = "ChatTk"
 
+file_path = ""
+
 icon_path = "icon16ChatTk.ico"
 
 few_shot_examples = []
@@ -77,6 +82,7 @@ chat_history_chunk = []
 # Function to get the response from the OpenAI API after the 'Send' button is clicked
 def send():
     global chat_history_chunk
+    global chat_history_chunk_image
 
     ask_button.config(state="disabled")
     clear_button.config(state="disabled")
@@ -91,9 +97,37 @@ def send():
 
     # Insert the user's prompt into the chat history
     # N.B. I have no idea why I need to rstrip('\n') here, but it prevents trailing new line characters from being added to the chat history
-    inputdict = {"role":"user","content":input_text.rstrip('\n')}
-    chat_history_chunk.append(inputdict)
+    #inputdict = {"role":"user","content":input_text.rstrip('\n')}
 
+    if file_path:
+        IMAGE_PATH = file_path
+
+        def encode_image(image_path):
+            with open(image_path, "rb") as image_file:
+                return base64.b64encode(image_file.read()).decode("utf-8")
+
+        base64_image = encode_image(IMAGE_PATH)
+
+        inputdict = {
+            "role":"user",
+            "content": [
+                {"type": "text", "text": input_text.rstrip('\n')},
+                {"type": "image_url", "image_url": {"url": f"data:image/png;base64,{base64_image}"}}
+            ]
+        }
+
+        chat_history_chunk_image = chat_history_chunk
+        chat_history_chunk_image.append(inputdict)
+
+    inputdict = {
+        "role":"user",
+        "content": [
+            {"type": "text", "text": input_text.rstrip('\n')},
+        ]
+    }
+
+    chat_history_chunk.append(inputdict)
+                
     # Clear the input box
     input_box.delete("1.0", "end")
 
@@ -105,13 +139,17 @@ def send():
 def call_api():
 
     def generate_text():
-        
+
         try:      
+            if file_path:
+                chat_history = chat_history_chunk_image
+            else:
+                chat_history = chat_history_chunk
             reply = ""
             async def main() -> None:
                 stream = await client.chat.completions.create(
                     model=model,
-                    messages=system_message_chunk+few_shot_chunk+chat_history_chunk[-var_past_messages_included:],
+                    messages=system_message_chunk+few_shot_chunk+chat_history[-var_past_messages_included:],
                     temperature=var_temperature,
                     max_tokens=var_max_tokens,
                     top_p=var_top_p,
@@ -185,6 +223,7 @@ def call_api():
 
         ask_button.config(state="normal")
         clear_button.config(state="normal")
+        #remove_image()
         if Flag_DALLE:
             dalle_button.config(state="normal")
 
@@ -228,11 +267,11 @@ def dalle_prompt():
 
     # download the image and create a PhotoImage object
     image_data = urllib.request.urlopen(image_url).read()
-    image = Image.open(io.BytesIO(image_data))
-    photo = ImageTk.PhotoImage(image)
+    DALLEimage = Image.open(io.BytesIO(image_data))
+    photo = ImageTk.PhotoImage(DALLEimage)
 
     # create a label to display the image
-    image_label = tk.Label(image_window, image=photo)
+    image_label = tk.Label(image_window, DALLEimage=photo)
     image_label.pack()
 
     # update the image label to prevent garbage collection
@@ -249,10 +288,96 @@ def clear_chat():
     output_box.configure(state="normal")
     output_box.delete("1.0", "end")
     output_box.configure(state="disabled")
+    remove_image()
     global chat_history_chunk
     global system_message_chunk
     chat_history_chunk = []
     system_message_chunk = [{"role":"system","content":system_message}]
+
+def add_image():
+    global file_path
+    root = tk.Tk()
+    root.withdraw()  # Hide the main window
+    file_path = filedialog.askopenfilename(filetypes=[("Image files", "*.jpg *.png")])  # Open the file dialog
+
+    if file_path:
+        sourceimage = Image.open(file_path)
+        output = io.BytesIO()
+        sourceimage.convert("RGB").save(output, "BMP")
+        data = output.getvalue()[14:]
+        output.close()
+
+        win32clipboard.OpenClipboard()
+        win32clipboard.EmptyClipboard()
+        win32clipboard.SetClipboardData(win32clipboard.CF_DIB, data)
+        win32clipboard.CloseClipboard()
+
+        get_image()
+
+    root.destroy()  # Close the Tkinter root window
+
+def get_image(event=None):
+    try:
+        gpt4o_image = Image.open(file_path)
+        if isinstance(gpt4o_image, Image.Image):
+            # Resize the image proportionally to a height of 67 pixels
+            base_height = 67
+            w_percent = (base_height / float(gpt4o_image.size[1]))
+            w_size = int((float(gpt4o_image.size[0]) * float(w_percent)))
+            thumbnailimage = gpt4o_image.resize((w_size, base_height), Image.LANCZOS)
+
+            # Convert the thumbnail image to a format Tkinter can use
+            tk_thumbnail = ImageTk.PhotoImage(thumbnailimage)
+            
+            # Display the thumbnail image in the label
+            thumbnailimage_label.config(image=tk_thumbnail)
+            thumbnailimage_label.image = tk_thumbnail
+
+            # Repack the thumbnailimage_label
+            thumbnailimage_label.pack(side="left", padx=6, pady=5)            
+
+            # When the thumbnail is clicked, create a new window and display the full-size image
+            def on_thumbnail_click(event):
+                top = tk.Toplevel()
+                top.title("Full-size Image")
+
+                # Convert the full-size image to a format Tkinter can use
+                tk_image = ImageTk.PhotoImage(gpt4o_image)
+
+                # Display the full-size image in a label in the new window
+                label = tk.Label(top, image=tk_image)
+                label.image = tk_image
+                label.pack()
+
+            thumbnailimage_label.bind("<Button-1>", on_thumbnail_click)
+
+            # Remove any existing instances of the remove_button
+            for widget in root.winfo_children():
+                if isinstance(widget, tk.Button) and widget["text"] == "Remove Image":
+                    widget.pack_forget()
+
+            # Add a button to the right of the thumbnail
+            global remove_button
+            remove_button = tk.Button(root, text="Remove Image", command=remove_image, height=4, width=12)
+            remove_button.pack(side="left", padx=6, pady=5)
+
+        else:
+            messagebox.showerror("Error", "No image found in clipboard")
+    except Exception as e:
+        messagebox.showerror("Error", str(e))
+
+# Function to remove the image and the button
+def remove_image():
+    global file_path
+    try:
+        thumbnailimage_label.config(image=None)
+        thumbnailimage_label.image = None
+        thumbnailimage_label.forget()
+        remove_button.destroy()
+    except:
+        pass
+    finally:
+        file_path = ""
 
 # Function to handle the "Return" key event
 def handle_return(event):
@@ -899,17 +1024,30 @@ input_box.config(yscrollcommand=input_scrollbar.set)
 input_box.bind("<Return>", handle_return)
 
 # Create the "Send" button aligned to the right of the form with 16px buffer space
-ask_button = tk.Button(root, text="Send", command=send, height=2, width=10)
+ask_button = tk.Button(root, text="Send", command=send, height=4, width=12)
 ask_button.pack(side="right", padx=16, pady=5)
 
 # Create the "Clear chat" button aligned to the left of the form with 16px buffer space
-clear_button = tk.Button(root, text="Clear chat", command=clear_chat, height=2, width=10)
+clear_button = tk.Button(root, text="Clear chat", command=clear_chat, height=4, width=12)
 clear_button.pack(side="left", padx=6, pady=5)
+
+# Create the "Add image" button aligned to the left of the form with 16px buffer space
+add_image_button = tk.Button(root, text="Add image", command=add_image, height=4, width=12)
+add_image_button.pack(side="left", padx=6, pady=5)
+
+# Create a label to display the pasted image
+thumbnailimage_label = tk.Label(root)
+thumbnailimage_label.pack(side="left", padx=6, pady=5)
+
+
 
 if Flag_DALLE:
     # create the DALL·E button
-    dalle_button = tk.Button(root, text="DALL·E 3", command=dalle_prompt_thread, height=2, width=10)
+    dalle_button = tk.Button(root, text="DALL·E 3", command=dalle_prompt_thread, height=4, width=12)
     dalle_button.pack(side="left", padx=5)
+
+# Bind Ctrl+V to the paste_image function
+root.bind("<Control-v>", get_image)
 
 # Start the GUI event loop
 root.mainloop()
