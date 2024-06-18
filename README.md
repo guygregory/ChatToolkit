@@ -1,7 +1,9 @@
 # Chat Toolkit - Azure OpenAI sample GPT-4o application
 Update 16/06/24 - Now supports version 1.x of the OpenAI Python Library. The old version can be found in the [legacy](/legacy/ChatTk-legacy.py) folder.
 
-![](media/ChatTk.gif)
+Update 18/06/24 - Now supports vision with the GPT-4o model
+
+![](media/GPT-4o-2.gif)
 
 As a Partner Technololgy Strategist (PTS) at Microsoft, I wanted to create a simple app to demonstrate the simplicity of the Azure OpenAI service to our partners and customers. This sample was originally written for the 0.x version of the OpenAI Python library and GPT-3.5, but has recently been updated to use the newer 1.x version of the library, with GPT-4o as the preferred model.
 
