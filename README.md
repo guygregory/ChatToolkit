@@ -28,9 +28,14 @@ As a Partner Technololgy Strategist (PTS) at Microsoft, I wanted to create a sim
 
 ## How to use - Downloading and running the application
 * The app requires that you have Python installed, which can be downloaded [here (python.org)](https://www.python.org/downloads/) or [here (Microsoft Store)](https://www.microsoft.com/store/productId/9NRWMJP3717K)
-* The app requires the 1.x version of the [OpenAI](https://pypi.org/project/openai/) Python library (pip install openai)
-* Download/clone the script onto your local computer
+* Download/clone the repo onto your local computer
 * Create a .env file in the working folder, and update with your own API key, Azure OpenAI endpoint details, and model name.
+
+## Install required packages ##
+Download the requirements.txt and install the packages (openai, Pillow, python-dotenv)
+```
+pip install -r requirements.txt
+```
 
 ## Example .env file ##
 ```
